@@ -13,7 +13,11 @@ describe('logic', () => {
 		expect(resolveBlock('$', 2)).toBe(2);
 	});
 
-	it('should parse strings', () => {
+	it('should parse strings with single quotes', () => {
+		expect(resolveBlock("'http://www.domain.com'")).toBe('http://www.domain.com');
+	});
+
+	it('should parse strings with double quotes', () => {
 		expect(resolveBlock('"http://www.domain.com"')).toBe('http://www.domain.com');
 	});
 
@@ -238,8 +242,12 @@ describe('logic', () => {
 			expect(resolveBlock('"a, b,c" / ", ?"')).toEqual(['a', 'b', 'c']);
 		});
 
+		it('should split string on a number', () => {
+			expect(resolveBlock('"a2b" / 2')).toEqual(['a', 'b']);
+		});
+
 		it('should return empty value if values are not compatible', () => {
-			expect(resolveBlock('"a" / 2')).toBeNull();
+			expect(resolveBlock('"a" / $', false)).toBeNull();
 		});
 	});
 	
@@ -250,6 +258,10 @@ describe('logic', () => {
 
 		it('should join string', () => {
 			expect(resolveBlock('$ * ", "', ['a', 'b', 'c'])).toBe('a, b, c');
+		});
+		
+		it('should join a string even if values are reversed', () => {
+			expect(resolveBlock('", " * $', ['a', 'b', 'c'])).toBe('a, b, c');
 		});
 		
 		it('should repeat a string', () => {
@@ -276,7 +288,7 @@ describe('logic', () => {
 	});
 	
 	describe('.', () => {
-		it('should fetch from object using astring key', () => {
+		it('should fetch from object using a string key', () => {
 			expect(resolveBlock('$."b"', { b: 2 })).toBe(2);
 		});
 

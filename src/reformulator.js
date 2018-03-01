@@ -1,13 +1,15 @@
 const operators = '()|&=!<>#+-/*%.';
 const operatorPrecedence = '001233334556667';
-const stringDefinition = '"([^"]|[^\\\\]")*"';
+const stringSingleDefinition = '\'([^\']|[^\\\\]\')*\'';
+const stringDoubleDefinition = '"([^"]|[^\\\\]")*"';
 const numberDefinition = '-?([1-9][0-9]+|[0-9])(.[0-9]+)?';
 const variableDefinition = '[a-zA-Z_$][0-9a-zA-Z_$]*';
-const negativeSignDefinition = `-(?=(${stringDefinition}|${variableDefinition}|[(]))`;
-const stringRegex = new RegExp(`^${stringDefinition}$`);
+const negativeSignDefinition = `-(?=(${stringSingleDefinition}|${stringDoubleDefinition}|${variableDefinition}|[(]))`;
+const stringSingleRegex = new RegExp(`^${stringSingleDefinition}$`);
+const stringDoubleRegex = new RegExp(`^${stringDoubleDefinition}$`);
 const variableRegex = new RegExp(`^${variableDefinition}$`);
 const negativeSignRegex = new RegExp(`${negativeSignDefinition}`, 'g');
-const operationRegex = new RegExp(`[${operators}]? *(${stringDefinition}|${numberDefinition}|${negativeSignDefinition}|[^${operators}])*`);
+const operationRegex = new RegExp(`[${operators}]? *(${stringSingleDefinition}|${stringDoubleDefinition}|${numberDefinition}|${negativeSignDefinition}|[^${operators}])*`);
 
 function isEmpty (value) {
 	if (value === undefined || value === null || typeof value === 'number' && isNaN(value)) {
@@ -44,7 +46,9 @@ function resolveValue (value, ...stack) {
 		return;
 	} else if (!isNaN(trimmedValue)) {
 		return Number(trimmedValue);
-	} else if (stringRegex.test(trimmedValue)) {
+	} else if (stringSingleRegex.test(trimmedValue)) {
+		return trimmedValue.replace(/^'|'$/g, '');
+	} else if (stringDoubleRegex.test(trimmedValue)) {
 		return trimmedValue.replace(/^"|"$/g, '');
 	} else if (!variableRegex.test(trimmedValue)) {
 		return null;
@@ -166,6 +170,7 @@ function resolveOperation (firstValue, operator, secondValue) {
 		case '-:number:number':
 			result = firstValue - secondValue;
 			break;
+		case '/:string:number':
 		case '/:string:string':
 			result = firstValue.split(new RegExp(secondValue, 'g'));
 			break;
@@ -173,8 +178,13 @@ function resolveOperation (firstValue, operator, secondValue) {
 			result = firstValue / secondValue;
 			break;
 		case '*:array:string':
-			result = firstValue.join(secondValue);
+		case '*:string:array': {
+			let arrayValue = Array.isArray(firstValue) ? firstValue : secondValue;
+			const stringValue = typeof firstValue === 'string' ? firstValue : secondValue;
+
+			result = arrayValue.join(stringValue);
 			break;
+		}
 		case '*:number:number':
 			result = firstValue * secondValue;
 			break;

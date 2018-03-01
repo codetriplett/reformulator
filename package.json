@@ -8,8 +8,15 @@
     "lint": "eslint src/**",
     "test": "jest --watch"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codetriplett/reformulator.git"
+  },
   "author": "triplett",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/codetriplett/reformulator/issues"
+  },
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
