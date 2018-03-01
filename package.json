@@ -1,6 +1,6 @@
 {
   "name": "reformulator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Transforms an object using a set of expressions.",
   "main": "lib/reformulator.js",
   "scripts": {
