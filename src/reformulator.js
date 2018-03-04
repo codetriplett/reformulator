@@ -207,7 +207,9 @@ function resolveOperation (firstValue, operator, secondValue) {
 		}
 		case '.:object:string':
 		case '.:object:number':
+		case '.:array:string':
 		case '.:array:number':
+		case '.:string:string':
 		case '.:string:number':
 			result = firstValue[secondValue];
 			break;
@@ -257,11 +259,15 @@ export default function resolveBlock (block, ...stack) {
 				break;
 			}
 
-			const variables = resolveBlock(block._, ...stack);
+			let variables = resolveBlock(block._, ...stack);
 			let result;
 			
-			if (block._ && variables === null) {
-				break;
+			if (variables === null) {
+				if (block._) {
+					break;
+				} else if (stack.length === 1) {
+					variables = stack[0];
+				}
 			}
 
 			if (Array.isArray(variables)) {

@@ -1,6 +1,6 @@
 import resolveBlock from '../reformulator';
 
-describe('logic', () => {
+describe('reformulator', () => {
 	it('should work with negative numbers', () => {
 		expect(resolveBlock('-2')).toBe(-2);
 	});
@@ -288,18 +288,30 @@ describe('logic', () => {
 	});
 	
 	describe('.', () => {
+		it('should fetch from object using a variable key', () => {
+			expect(resolveBlock('$.b', { b: 'c', c: 2 })).toBe(2);
+		});
+
 		it('should fetch from object using a string key', () => {
 			expect(resolveBlock('$."b"', { b: 2 })).toBe(2);
 		});
+		
+		it('should fetch from object using a number key', () => {
+			expect(resolveBlock('$.0', { '0': 2 })).toBe(2);
+		});
 
-		it('should fetch from object using a variable key', () => {
-			expect(resolveBlock('$.b', { b: 'c', c: 2 })).toBe(2);
+		it('should fetch from array using a string key', () => {
+			expect(resolveBlock('$."length"', [2])).toBe(1);
 		});
 
 		it('should fetch from array using a number key', () => {
 			expect(resolveBlock('$.0', [2])).toBe(2);
 		});
 
+		it('should fetch from string using a string key', () => {
+			expect(resolveBlock('"asdf"."length"')).toBe(4);
+		});
+		
 		it('should fetch from string using a number key', () => {
 			expect(resolveBlock('"asdf".2')).toBe('d');
 		});
@@ -317,8 +329,22 @@ describe('logic', () => {
 
 		expect(actual).toEqual({ value: 5 });
 	});
-
+	
 	it('should transform an array', () => {
+		const actual = resolveBlock({
+			value: '1 + b'
+		}, [
+			{ b: 1 },
+			{ b: 2 }
+		]);
+
+		expect(actual).toEqual([
+			{ value: 2 },
+			{ value: 3 }
+		]);
+	});
+
+	it('should transform an array within an object', () => {
 		const actual = resolveBlock({
 			_: 'a',
 			value: '1 + b'
@@ -370,7 +396,7 @@ describe('logic', () => {
 	it('should not transform if local state is empty', () => {
 		const actual = resolveBlock({
 			_: 'a ! 2',
-			value: '1 + a'
+			value: '1 + $'
 		}, { a: 2 });
 
 		expect(actual).toBeNull();
@@ -388,6 +414,11 @@ describe('logic', () => {
 			b: 2,
 			c: 3
 		});
+	});
+
+	it('should not transform if input data is missing and is expected', () => {
+		const actual = resolveBlock('1 + a');
+		expect(actual).toBeNull();
 	});
 
 	it('should use them all together', () => {
