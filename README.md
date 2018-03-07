@@ -21,33 +21,34 @@ This will keep the value to its right if the one to its left is defined and not 
 
 ### = (Precedence: 2)
 This will keep the value to its left if the following condition passes.
-#### (string, number, boolean) = (string, number, boolean)
+#### (string -or- number -or- boolean) = (string -or- number -or- boolean)
 This will perform a simple equivalency check.
-#### (object, array) = (object, array)
+#### (object -or- array) = (object -or- array)
 This will fully compare the properties of the two objects to determine if they are equal.
 
 ### ! (Precedence: 2)
 This will keep the value to its left if the following condition passes.
-#### (string, number, boolean) ! (string, number, boolean)
+#### (string -or- number -or- boolean) ! (string -or- number -or- boolean)
 This will perform a simple non-equivalency check.
-#### (object, array) ! (object, array)
-This will fully compare the properties of the two objects to determine if they are equal.
+#### (object -or- array) ! (object -or- array)
+This will fully compare the properties of the two objects to determine if they are not equal.
 
 ### < (Precedence: 2)
 This will keep the value to its left if the following condition passes.
-#### (string, number, boolean) < (string, number, boolean)
+#### (string -or- number -or- boolean) < (string -or- number -or- boolean)
 This will perform a simple 'less than' check.
-#### (object, array) < (object, array) *not yet supported
-This will fully compare the properties of the two objects to determine if the value to its right contains at least all the same properties as the one to its left and those values are the same between the two.
+#### (object -or- array) < (object -or- array)
+(TODO) This will fully compare the properties of the two objects to determine if the value to its right contains at least all the same properties as the one to its left and those values are the same between the two.
 
 ### > (Precedence: 2)
 This will keep the value to its left if the following condition passes.
-#### (string, number, boolean) > (string, number, boolean)
+#### (string -or- number -or- boolean) > (string -or- number -or- boolean)
 This will perform a simple 'greater than' check.
-#### (object, array) > (object, array) *not yet supported
-This will fully compare the properties of the two objects to determine if the value to its left contains at least all the same properties as the one to its right and those values are the same between the two.
+#### (object -or- array) > (object -or- array)
+(TODO) This will fully compare the properties of the two objects to determine if the value to its left contains at least all the same properties as the one to its right and those values are the same between the two.
 
 ### # (Precedence: 3)
+#### (number) # (number)
 This will convert the number to its left to a string with a number of decimals defined by the number to its right.
 
 ### + (Precedence: 4)
@@ -55,37 +56,41 @@ This will convert the number to its left to a string with a number of decimals d
 This will perform a simple addition.
 #### (string) + (string)
 This will add the string to its right to the end of the string to its left.
-#### (object, array) + (object, array)
+#### (object) + (object)
 (TODO) This will add the properties of the object to its right to the object to its left.
+#### (array) + (array)
+(TODO) This will add the items of the array to its right to the end of the array to its left.
 
 ### - (Precedence: 4)
 #### (number) - (number)
 This will perform a simple subtraction.
-#### (string) - (string, number)
+#### (string) - (string -or- number)
 This will create a regex of the value to its right and remove all instances from the string on its left.
-#### (object, array) - (object, array)
-(TODO) This will remove the properties of the value to its right from the value to its left.
+#### (object) - (object)
+(TODO) This will remove the properties of the object to its right from the object to its left.
+#### (array) - (number)
+(TODO) This will remove a number of items from the end of the array.
+#### (number) - (array)
+(TODO) This will remove a number of items from the beginning of the array.
 
 ### / (Precedence: 5)
 #### (number) / (number)
 This will perform a simple division.
-#### (string) / (string, number)
+#### (string) / (string -or- number)
 This will split the string to its left using a regex created by the value to its right.
 
 ### * (Precedence: 5)
 #### (number) * (number)
 This will perform a simple multiplication.
-#### (string) * (number) or (number) * (string)
+#### (string) * (number) -or- (number) * (string)
 This will repeat the string a number of times.
-#### (string) * (array) or (array) * (string)
+#### (string) * (array) -or- (array) * (string)
 This will join the values in the array together placing the string between each one.
 
 ### % (Precedence: 5)
-#### (number) * (number)
+#### (number) % (number)
 This will return the remainder from dividing the value to its left by the value to its right.
 
 ### . (Precedence: 6)
-#### (object) * (string, number)
-This will use the value to its right as a key to fetch a new value from the object to its left.
-#### (array, string) * (number)
-This will use the number to its right as an index to fetch a new value from the array or string to its left.
+#### (object -or- array -or- string) . (string -or- number)
+This will use the value to its right as a key to fetch a new value from the object, array or string to its left.
