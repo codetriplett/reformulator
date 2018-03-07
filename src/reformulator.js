@@ -1,7 +1,7 @@
 const operators = '()|&=!<>#+-/*%.';
 const operatorPrecedence = '001233334556667';
-const stringSingleDefinition = '\'([^\']|[^\\\\]\')*\'';
-const stringDoubleDefinition = '"([^"]|[^\\\\]")*"';
+const stringSingleDefinition = "'(\\\\'|[^'])*'";
+const stringDoubleDefinition = '"(\\\\"|[^"])*"';
 const numberDefinition = '-?([1-9][0-9]+|[0-9])(.[0-9]+)?';
 const variableDefinition = '[a-zA-Z_$][0-9a-zA-Z_$]*';
 const negativeSignDefinition = `-(?=(${stringSingleDefinition}|${stringDoubleDefinition}|${variableDefinition}|[(]))`;
@@ -47,9 +47,9 @@ function resolveValue (value, ...stack) {
 	} else if (!isNaN(trimmedValue)) {
 		return Number(trimmedValue);
 	} else if (stringSingleRegex.test(trimmedValue)) {
-		return trimmedValue.replace(/^'|'$/g, '');
+		return trimmedValue.replace(/^'|'$/g, '').replace(/\\'/g, '\'');
 	} else if (stringDoubleRegex.test(trimmedValue)) {
-		return trimmedValue.replace(/^"|"$/g, '');
+		return trimmedValue.replace(/^"|"$/g, '').replace(/\\"/g, '\"');
 	} else if (!variableRegex.test(trimmedValue)) {
 		return null;
 	}

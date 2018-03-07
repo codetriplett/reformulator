@@ -17,8 +17,16 @@ describe('reformulator', () => {
 		expect(resolveBlock("'http://www.domain.com'")).toBe('http://www.domain.com');
 	});
 
+	it('should parse strings with escaped single quotes inside single quotes', () => {
+		expect(resolveBlock("'key=\\'value\\''")).toBe('key=\'value\'');
+	});
+
 	it('should parse strings with double quotes', () => {
 		expect(resolveBlock('"http://www.domain.com"')).toBe('http://www.domain.com');
+	});
+
+	it('should parse strings with escaped double quotes inside double quotes', () => {
+		expect(resolveBlock('"key=\\"value\\""')).toBe("key=\"value\"");
 	});
 
 	it('should respect the order of operations', () => {
