@@ -3,13 +3,15 @@ const operatorPrecedence = '001233334556667';
 const stringSingleDefinition = "'(\\\\'|[^'])*'";
 const stringDoubleDefinition = '"(\\\\"|[^"])*"';
 const numberDefinition = '-?([1-9][0-9]+|[0-9])(.[0-9]+)?';
+const booleanDefinition = '(true|false)';
 const variableDefinition = '[a-zA-Z_$][0-9a-zA-Z_$]*';
 const negativeSignDefinition = `-(?=(${stringSingleDefinition}|${stringDoubleDefinition}|${variableDefinition}|[(]))`;
 const stringSingleRegex = new RegExp(`^${stringSingleDefinition}$`);
 const stringDoubleRegex = new RegExp(`^${stringDoubleDefinition}$`);
+const booleanRegex = new RegExp(`^${booleanDefinition}$`);
 const variableRegex = new RegExp(`^${variableDefinition}$`);
 const negativeSignRegex = new RegExp(`${negativeSignDefinition}`, 'g');
-const operationRegex = new RegExp(`[${operators}]? *(${stringSingleDefinition}|${stringDoubleDefinition}|${numberDefinition}|${negativeSignDefinition}|[^${operators}])*`);
+const operationRegex = new RegExp(`[${operators}]? *(${stringSingleDefinition}|${stringDoubleDefinition}|${numberDefinition}|${booleanDefinition}|${negativeSignDefinition}|[^${operators}])*`);
 
 function isEmpty (value) {
 	if (value === undefined || value === null || typeof value === 'number' && isNaN(value)) {
@@ -17,21 +19,22 @@ function isEmpty (value) {
 	}
 }
 
-function isEqual (firstValue, secondValue) {
+function isEqual (firstValue, secondValue, allowExtraProperties) {
 	if ((firstValue === null || typeof firstValue !== 'object')
 			&& (secondValue === null || typeof secondValue !== 'object')) {
 		return firstValue === secondValue;
 	}
 
-	const firstValueKeys = Object.keys(firstValue).sort();
-	const secondValueKeys = Object.keys(secondValue).sort();
+	const firstValueKeys = Object.keys(firstValue);
+	const secondValueKeys = Object.keys(secondValue);
 
-	if (firstValueKeys.length !== secondValueKeys.length) {
+	if (!allowExtraProperties && firstValueKeys.length !== secondValueKeys.length
+			|| allowExtraProperties && firstValueKeys.length <= secondValueKeys.length) {
 		return false;
 	}
 
-	firstValueKeys.forEach((key, i) => {
-		if (secondValueKeys[i] !== key || !isEqual(firstValue[key], secondValue[key])) {
+	secondValueKeys.forEach((key, i) => {
+		if (!isEqual(firstValue[key], secondValue[key], allowExtraProperties)) {
 			return false;
 		}
 	});
@@ -50,6 +53,8 @@ function resolveValue (value, ...stack) {
 		return trimmedValue.replace(/^'|'$/g, '').replace(/\\'/g, '\'');
 	} else if (stringDoubleRegex.test(trimmedValue)) {
 		return trimmedValue.replace(/^"|"$/g, '').replace(/\\"/g, '\"');
+	} else if (booleanRegex.test(trimmedValue)) {
+		return trimmedValue === 'true';
 	} else if (!variableRegex.test(trimmedValue)) {
 		return null;
 	}
@@ -63,7 +68,7 @@ function resolveValue (value, ...stack) {
 			foundValue = variables[trimmedValue];
 		}
 
-		if (!isEmpty(foundValue)) {
+		if (!isEmpty(foundValue) || variables && variables.hasOwnProperty(trimmedValue)) {
 			break;
 		}
 	}
@@ -146,8 +151,14 @@ function resolveOperation (firstValue, operator, secondValue) {
 		case '!:empty:empty':
 			result = firstValue === undefined ? !secondValue : null;
 			break;
+		case '<:structure:structure':
+			result = isEqual(secondValue, firstValue, true) ? firstValue : null;
+			break;
 		case '<:literal:literal':
 			result = firstValue < secondValue ? firstValue : null;
+			break;
+		case '>:structure:structure':
+			result = isEqual(firstValue, secondValue, true) ? firstValue : null;
 			break;
 		case '>:literal:literal':
 			result = firstValue > secondValue ? firstValue : null;
@@ -163,7 +174,37 @@ function resolveOperation (firstValue, operator, secondValue) {
 			result = subtractedValue.toFixed(secondValue);
 			break;
 		}
+		case '+:object:object':
+			result = { ...firstValue, ...secondValue };
+			break;
+		case '+:array:array':
+			result = [...firstValue, ...secondValue];
+			break;
+		case '+:array:boolean':
+		case '+:array:number':
+		case '+:array:string':
+		case '+:array:object':
+			result = [...firstValue, secondValue];
+			break;
+		case '+:boolean:array':
+		case '+:number:array':
+		case '+:string:array':
+		case '+:object:array':
+			result = [firstValue, ...secondValue];
+			break;
+		case '-:object:string': {
+			let { [secondValue]: removal, ...remainder } = firstValue;
+			result = remainder;
+			break;
+		}
+		case '-:number:array':
+		case '-:number:string':
+			result = secondValue.slice(firstValue);
+			break;
+		case '-:array:number':
 		case '-:string:number':
+			result = firstValue.slice(0, secondValue);
+			break;
 		case '-:string:string':
 			result = firstValue.replace(new RegExp(secondValue, 'g'), '');
 			break;
@@ -259,15 +300,15 @@ export default function resolveBlock (block, ...stack) {
 				break;
 			}
 
-			let variables = resolveBlock(block._, ...stack);
+			let variables = resolveBlock(block._, ...stack, null);
 			let result;
-			
+
 			if (variables === null) {
 				if (block._) {
 					break;
-				} else if (stack.length === 1) {
-					variables = stack[0];
 				}
+
+				variables = stack[0];
 			}
 
 			if (Array.isArray(variables)) {
@@ -287,6 +328,8 @@ export default function resolveBlock (block, ...stack) {
 					return result;
 				}
 
+				const allowEmpty = stack[stack.length - 1] === null;
+				let someDefined = false;
 				result = result || {};
 
 				for (const key in block) {
@@ -295,13 +338,18 @@ export default function resolveBlock (block, ...stack) {
 					}
 
 					const value = resolveBlock(block[key], variables, ...stack);
+					const isDefined = !isEmpty(value);
 
-					if (value !== undefined && value !== null) {
+					if (isDefined || allowEmpty) {
 						result[key] = value;
+
+						if (isDefined) {
+							someDefined = true;
+						}
 					}
 				}
 
-				if (Object.keys(result).length === 0) {
+				if (!someDefined) {
 					break;
 				}
 			}

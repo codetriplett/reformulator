@@ -1,8 +1,20 @@
 import resolveBlock from '../reformulator';
 
 describe('reformulator', () => {
-	it('should work with negative numbers', () => {
+	it('should parse positive numbers', () => {
+		expect(resolveBlock('2')).toBe(2);
+	});
+
+	it('should parse negative numbers', () => {
 		expect(resolveBlock('-2')).toBe(-2);
+	});
+
+	it('should parse boolean true values', () => {
+		expect(resolveBlock('true')).toBe(true);
+	});
+
+	it('should parse boolean false values', () => {
+		expect(resolveBlock('false')).toBe(false);
 	});
 
 	it('should use variables', () => {
@@ -91,15 +103,32 @@ describe('reformulator', () => {
 			})).toBe(firstValue);
 		});
 
-		it('should not return first object if it does not matche second object', () => {
-			const firstValue = {
-				parent: { child: 2 }
-			};
-
+		it('should not return first object if it contains more than second object', () => {
 			expect(resolveBlock('a = b', {
-				a: firstValue,
-				b: 2
+				a: {
+					parent: { child: 2 },
+					extra: 3
+				},
+				b: {
+					parent: { child: 2 }
+				}
 			})).toBeNull();
+		});
+
+		it('should not return first object if it contains less than second object', () => {
+			expect(resolveBlock('a = b', {
+				a: {
+					parent: { child: 2 }
+				},
+				b: {
+					parent: { child: 2 },
+					extra: 3
+				}
+			})).toBeNull();
+		});
+
+		it('should not return first object if values are incompatible', () => {
+			expect(resolveBlock('$ = 2', { value: 2 })).toBeNull();
 		});
 
 		it('should return null if the values are not the same', () => {
@@ -127,13 +156,39 @@ describe('reformulator', () => {
 			})).toBe(firstValue);
 		});
 
-		it('should not return first object if it does not matche second object', () => {
+		it('should return first object if it contains more than second object', () => {
+			const firstValue = {
+				parent: { child: 2 },
+				extra: 3
+			};
+
+			expect(resolveBlock('a ! b', {
+				a: firstValue,
+				b: {
+					parent: { child: 2 }
+				}
+			})).toBe(firstValue);
+		});
+
+		it('should return first object if it contains less than second object', () => {
 			const firstValue = {
 				parent: { child: 2 }
 			};
 
 			expect(resolveBlock('a ! b', {
 				a: firstValue,
+				b: {
+					parent: { child: 2 },
+					extra: 3
+				}
+			})).toBe(firstValue);
+		});
+
+		it('should not return first object if it matches second object', () => {
+			expect(resolveBlock('a ! b', {
+				a: {
+					parent: { child: 2 }
+				},
 				b: {
 					parent: { child: 2 }
 				}
@@ -161,6 +216,49 @@ describe('reformulator', () => {
 		it('should return first value if it is less than the second value', () => {
 			expect(resolveBlock('2 < 3')).toBe(2);
 		});
+
+		it('should return first object if its properties match those same properties in second object', () => {
+			const firstValue = {
+				parent: { child: 2 }
+			};
+
+			expect(resolveBlock('a < b', {
+				a: firstValue,
+				b: {
+					parent: {
+						child: 2,
+						extra: 3
+					},
+					extra: 3
+				}
+			})).toBe(firstValue);
+		});
+
+		it('should not return first object if it matches second object', () => {
+			expect(resolveBlock('a < b', {
+				a: {
+					parent: { child: 2 }
+				},
+				b: {
+					parent: { child: 2 }
+				}
+			})).toBeNull();
+		});
+
+		it('should not return first object if second object contains the same data plus more', () => {
+			expect(resolveBlock('a < b', {
+				a: {
+					parent: {
+						child: 2,
+						extra: 3
+					},
+					extra: 3
+				},
+				b: {
+					parent: { child: 2 }
+				}
+			})).toBeNull();
+		});
 		
 		it('should return empty if it is not less than the second value', () => {
 			expect(resolveBlock('4 < 3')).toBeNull();
@@ -175,13 +273,58 @@ describe('reformulator', () => {
 		it('should return first value if it is less than the second value', () => {
 			expect(resolveBlock('3 > 2')).toBe(3);
 		});
+
+		it('should return first object if it contains all the same data as second object plus more', () => {
+			const firstValue = {
+				parent: {
+					child: 2,
+					extra: 3
+				},
+				extra: 3
+			};
+
+			expect(resolveBlock('a > b', {
+				a: firstValue,
+				b: {
+					parent: { child: 2 }
+				}
+			})).toBe(firstValue);
+		});
+
+		it('should not return first object if it matches second object', () => {
+			expect(resolveBlock('a > b', {
+				a: {
+					parent: { child: 2 }
+				},
+				b: {
+					parent: { child: 2 }
+				}
+			})).toBeNull();
+		});
+
+		it('should not return first object if it is missing properties found in second object', () => {
+			expect(resolveBlock('a > b', {
+				a: {
+					parent: { child: 2 }
+				},
+				b: {
+					parent: {
+						child: 2,
+						extra: 3
+					},
+					extra: 3
+				}
+			})).toBeNull();
+		});
 		
 		it('should return empty if it is not less than the second value', () => {
 			expect(resolveBlock('3 > 4')).toBeNull();
 		});
 
-		it('should return empty if the values are not comparable', () => {
-			expect(resolveBlock('a > 2', { a: { b: 2 }})).toBeNull();
+		it('should return empty if the values are not compatible', () => {
+			expect(resolveBlock('a > 2', {
+				a: { b: 2 }
+			})).toBeNull();
 		});
 	});
 
@@ -212,20 +355,46 @@ describe('reformulator', () => {
 			expect(resolveBlock('"a" + "b"')).toBe('ab');
 		});
 
+		it('should concatenate arrays', () => {
+			expect(resolveBlock('a + b', {
+				a: [2, 3],
+				b: [4, 5]
+			})).toEqual([2, 3, 4, 5]);
+		});
+
+		it('should overwrite properties from second object to first object', () => {
+			expect(resolveBlock('a + b', {
+				a: {
+					keep: 2,
+					overwrite: 3,
+				},
+				b: {
+					overwrite: 4,
+					add: 5
+				}
+			})).toEqual({
+				keep: 2,
+				overwrite: 4,
+				add: 5
+			});
+		});
+
+		it('should add a value to the end of the array', () => {
+			expect(resolveBlock('$ + 4', [2, 3])).toEqual([2, 3, 4]);
+		});
+
+		it('should add a value to the beginning of the array', () => {
+			expect(resolveBlock('4 + $', [3, 2])).toEqual([4, 3, 2]);
+		});
+
 		it('should return empty value if values are not compatible', () => {
-			expect(resolveBlock('$ + 2', {
-				parent: { child: 2 }
-			})).toBeNull();
+			expect(resolveBlock('$ + 2', { value:  2 })).toBeNull();
 		});
 	});
 	
 	describe('-', () => {
 		it('should subtracted numbers', () => {
 			expect(resolveBlock('2 - 1')).toBe(1);
-		});
-
-		it('should remove number from string', () => {
-			expect(resolveBlock('"a2b2" - 2')).toBe('ab');
 		});
 
 		it('should remove pattern from string', () => {
@@ -238,6 +407,33 @@ describe('reformulator', () => {
 
 		it('should return first value if suffix is not present', () => {
 			expect(resolveBlock('"asdf" - "x"')).toBe('asdf');
+		});
+
+		it('should remove property from first object', () => {
+			expect(resolveBlock('$ - "remove"', {
+				keep: 2,
+				remove: 3
+			})).toEqual({ keep: 2 });
+		});
+
+		it('should remove a number of values from the beginning of an array', () => {
+			expect(resolveBlock('2 - $', [2, 3, 4, 5])).toEqual([4, 5]);
+		});
+
+		it('should remove a number of values from the end of an array', () => {
+			expect(resolveBlock('$ - 2', [2, 3, 4, 5])).toEqual([2, 3]);
+		});
+
+		it('should remove a number of values from the beginning of a string', () => {
+			expect(resolveBlock('2 - $', 'asdf')).toEqual('df');
+		});
+
+		it('should remove a number of values from the end of a string', () => {
+			expect(resolveBlock('$ - 2', 'asdf')).toEqual('as');
+		});
+
+		it('should return empty value if values are not compatible', () => {
+			expect(resolveBlock('$ - 2', { value:  2 })).toBeNull();
 		});
 	});
 	
@@ -337,6 +533,18 @@ describe('reformulator', () => {
 
 		expect(actual).toEqual({ value: 5 });
 	});
+
+	it('should not look beyond local state for a value that was set to null', () => {
+		const actual = resolveBlock({
+			_: {
+				a: 'a',
+				b: 'c * 2'
+			},
+			value: '1 + b'
+		}, { a: 2 }, { b: 3 });
+
+		expect(actual).toBeNull();
+	});
 	
 	it('should transform an array', () => {
 		const actual = resolveBlock({
@@ -390,6 +598,20 @@ describe('reformulator', () => {
 		});
 
 		expect(actual).toEqual([2, 3]);
+	});
+
+	it('should transform arrays of arrays', () => {
+		expect(resolveBlock({
+			$: {
+				$: '$ + 1'
+			}
+		}, [
+			[0, 1],
+			['a', 'b']
+		])).toEqual([
+			[1, 2],
+			['a1', 'b1']
+		]);
 	});
 
 	it('should not transform properties if there is a literal representation', () => {

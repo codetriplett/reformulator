@@ -38,14 +38,14 @@ This will keep the value to its left if the following condition passes.
 #### (string -or- number -or- boolean) < (string -or- number -or- boolean)
 This will perform a simple 'less than' check.
 #### (object -or- array) < (object -or- array)
-(TODO) This will fully compare the properties of the two objects to determine if the value to its right contains at least all the same properties as the one to its left and those values are the same between the two.
+This will fully compare the properties of the two objects to determine if the value to its right contains at least all the same properties as the one to its left and those values are the same between the two.
 
 ### > (Precedence: 2)
 This will keep the value to its left if the following condition passes.
 #### (string -or- number -or- boolean) > (string -or- number -or- boolean)
 This will perform a simple 'greater than' check.
 #### (object -or- array) > (object -or- array)
-(TODO) This will fully compare the properties of the two objects to determine if the value to its left contains at least all the same properties as the one to its right and those values are the same between the two.
+This will fully compare the properties of the two objects to determine if the value to its left contains at least all the same properties as the one to its right and those values are the same between the two.
 
 ### # (Precedence: 3)
 #### (number) # (number)
@@ -57,21 +57,25 @@ This will perform a simple addition.
 #### (string) + (string)
 This will add the string to its right to the end of the string to its left.
 #### (object) + (object)
-(TODO) This will add the properties of the object to its right to the object to its left.
+This will add the properties of the object to its right to the object to its left.
+#### (array) + (object -or- string -or- number -or- boolean)
+This will add the value to its right to the end of the array to its left.
+#### (object -or- string -or- number -or- boolean) + (array)
+This will add the value to its left to the beginning of the array to its right.
 #### (array) + (array)
-(TODO) This will add the items of the array to its right to the end of the array to its left.
+This will add the items of the array to its right to the end of the array to its left.
 
 ### - (Precedence: 4)
 #### (number) - (number)
 This will perform a simple subtraction.
-#### (string) - (string -or- number)
-This will create a regex of the value to its right and remove all instances from the string on its left.
-#### (object) - (object)
-(TODO) This will remove the properties of the object to its right from the object to its left.
-#### (array) - (number)
-(TODO) This will remove a number of items from the end of the array.
-#### (number) - (array)
-(TODO) This will remove a number of items from the beginning of the array.
+#### (string) - (string)
+This will create a regex of the string to its right and remove all instances from the string to its left.
+#### (object) - (string)
+This will remove a property from the object to its left.
+#### (number) - (array -or- string)
+This will remove a number of items from the beginning of the array or string.
+#### (array -or- string) - (number)
+This will remove a number of items from the end of the array or string.
 
 ### / (Precedence: 5)
 #### (number) / (number)
