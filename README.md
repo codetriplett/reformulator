@@ -1,6 +1,9 @@
 # reformulator
 Transforms an object using a set of expressions that exist in a separate transformation object. The transformation allows rescoping variables and iterating over arrays, all without the need for functions. The expressions also extend the functionality of what is normally allowed in JavaScript.
 
+## Types
+Arrays, objects, strings, numbers and boolean values can be referenced through variables in the expression string and read from the data you provide or be defined directly in the expression string. Strings can be surrounded by either single or double quotes and support escaped quote characters using two backslashes. The key for each property in an object should not be surrounded by quotes. The value for each property in an object or item in an array will be treated like another expression string except it cannot contain additional objects or arrays. These limitations don't apply for objects or arrays that are referenced through variables, only when defined directly in the expression string.
+
 ## Structure
 The structure of your transformation object will define the structure of the resulting object. Undefined and null values will be removed along with empty objects and arrays. You are free to nest objects and use whatever properties you like except for _ and $, which are reserved for the following purposes.
 
@@ -95,6 +98,10 @@ This will join the values in the array together placing the string between each 
 #### (number) % (number)
 This will return the remainder from dividing the value to its left by the value to its right.
 
-### . (Precedence: 6)
+### ^ (Precedence: 6)
+#### (number) ^ (number)
+This will raise the number to its left by the power of the number to its right.
+
+### . (Precedence: 7)
 #### (object -or- array -or- string) . (string -or- number)
 This will use the value to its right as a key to fetch a new value from the object, array or string to its left.
