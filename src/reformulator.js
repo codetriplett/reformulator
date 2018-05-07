@@ -1,17 +1,31 @@
-const operators = '()|&=!<>#+-/*%.';
-const operatorPrecedence = '001233334556667';
-const stringSingleDefinition = "'(\\\\'|[^'])*'";
-const stringDoubleDefinition = '"(\\\\"|[^"])*"';
-const numberDefinition = '-?([1-9][0-9]+|[0-9])(.[0-9]+)?';
-const booleanDefinition = '(true|false)';
-const variableDefinition = '[a-zA-Z_$][0-9a-zA-Z_$]*';
-const negativeSignDefinition = `-(?=(${stringSingleDefinition}|${stringDoubleDefinition}|${variableDefinition}|[(]))`;
-const stringSingleRegex = new RegExp(`^${stringSingleDefinition}$`);
-const stringDoubleRegex = new RegExp(`^${stringDoubleDefinition}$`);
-const booleanRegex = new RegExp(`^${booleanDefinition}$`);
+const operators = '()|&=!<>#+-/*%^.';
+const operatorPrecedence = '0012333345566678';
+
+const numberDefinition = '(-?(0|[1-9][0-9]*)(.[0-9]+)?)';
+const variableDefinition = '([a-zA-Z_$][0-9a-zA-Z_$]*)';
+const stringDefinition = '("(\\\\"|[^"])*"|\'(\\\\\'|[^\'])*\')';
+const objectDefinition = `\\{(${stringDefinition}|[^}])*\\}`;
+const arrayDefinition = `\\[(${stringDefinition}|[^\\]])*\\]`;
+
+const operatorDefinition = '()|&=!<>#+\\-/*%^.';
+const operandDefinition = `((${arrayDefinition}|${objectDefinition}|${stringDefinition}|${numberDefinition}|[^${operatorDefinition}:,])*)`;
+const operationDefinition = `([${operatorDefinition}] *${operandDefinition})`;
+const expressionDefinition = `((${stringDefinition}|[^:,])*)`;
+
+const booleanRegex = /^(true|false)$/;
 const variableRegex = new RegExp(`^${variableDefinition}$`);
-const negativeSignRegex = new RegExp(`${negativeSignDefinition}`, 'g');
-const operationRegex = new RegExp(`[${operators}]? *(${stringSingleDefinition}|${stringDoubleDefinition}|${numberDefinition}|${booleanDefinition}|${negativeSignDefinition}|[^${operators}])*`);
+const stringRegex = new RegExp(`^${stringDefinition}$`);
+const objectRegex = new RegExp(`^${objectDefinition}$`);
+const arrayRegex = new RegExp(`^${arrayDefinition}$`);
+const operationRegex = new RegExp(`^${operationDefinition} *`);
+const expressionRegex = new RegExp(`^ *${expressionDefinition} *$`);
+const negativeSignRegex = new RegExp(`[${operatorDefinition}] *-(?=${variableDefinition}|\\()`);
+const negationRegex = new RegExp(`[${operatorDefinition}] *!(?=${operandDefinition})`);
+
+const escapedCharacterRegexMap = {
+	'\'': /\\'/g,
+	'"': /\\"/g
+};
 
 function isEmpty (value) {
 	if (value === undefined || value === null || typeof value === 'number' && isNaN(value)) {
@@ -42,6 +56,56 @@ function isEqual (firstValue, secondValue, allowExtraProperties) {
 	return true;
 }
 
+function resolveObject (string, ...stack) {
+	let remainingString = `${string.slice(1, -1)},`;
+	const object = {};
+
+	while (remainingString.length) {
+		const colonIndex = remainingString.indexOf(':');
+		const commaIndex = remainingString.indexOf(',');
+		const key = remainingString.slice(0, colonIndex !== -1 ? colonIndex : commaIndex).trim();
+		const expression = remainingString.slice(colonIndex + 1, commaIndex);
+
+		if (!variableRegex.test(key) || !expressionRegex.test(expression)) {
+			return;
+		}
+
+		const value = resolveExpression(expression, ...stack);
+
+		if (!isEmpty(value)) {
+			object[key] = value;
+		}
+
+		remainingString = remainingString.slice(commaIndex + 1);
+	}
+
+	return object;
+};
+
+function resolveArray (string, ...stack) {
+	let remainingString = `${string.slice(1, -1)},`;
+	const array = [];
+
+	while (remainingString.length) {
+		const commaIndex = remainingString.indexOf(',');
+		const expression = remainingString.slice(0, commaIndex);
+		
+		if (!expressionRegex.test(expression)) {
+			return;
+		}
+
+		const value = resolveExpression(expression, ...stack);
+
+		if (!isEmpty(value)) {
+			array.push(value);
+		}
+
+		remainingString = remainingString.slice(commaIndex + 1);
+	}
+
+	return array;
+};
+
 function resolveValue (value, ...stack) {
 	let trimmedValue = value.trim();
 
@@ -49,12 +113,18 @@ function resolveValue (value, ...stack) {
 		return;
 	} else if (!isNaN(trimmedValue)) {
 		return Number(trimmedValue);
-	} else if (stringSingleRegex.test(trimmedValue)) {
-		return trimmedValue.replace(/^'|'$/g, '').replace(/\\'/g, '\'');
-	} else if (stringDoubleRegex.test(trimmedValue)) {
-		return trimmedValue.replace(/^"|"$/g, '').replace(/\\"/g, '\"');
+	} else if (stringRegex.test(trimmedValue)) {
+		const escapedQuote = trimmedValue[0];
+
+		return trimmedValue
+			.slice(1, -1)
+			.replace(escapedCharacterRegexMap[escapedQuote], escapedQuote);
 	} else if (booleanRegex.test(trimmedValue)) {
 		return trimmedValue === 'true';
+	} else if (objectRegex.test(trimmedValue)) {
+		return resolveObject(trimmedValue, ...stack);
+	} else if (arrayRegex.test(trimmedValue)) {
+		return resolveArray(trimmedValue, ...stack);
 	} else if (!variableRegex.test(trimmedValue)) {
 		return null;
 	}
@@ -246,6 +316,10 @@ function resolveOperation (firstValue, operator, secondValue) {
 			result = firstValue % secondValue;
 			break;
 		}
+		case '^:number:number': {
+			result = Math.pow(firstValue, secondValue);
+			break;
+		}
 		case '.:object:string':
 		case '.:object:number':
 		case '.:array:string':
@@ -262,8 +336,11 @@ function resolveOperation (firstValue, operator, secondValue) {
 function resolveExpression (expression, ...stack) {
 	const valueStack = [];
 	const operatorStack = [];
-	let remainingExpression = ` ${expression.replace(negativeSignRegex, '-1 * ')}`;
 	let nextOperation;
+	
+	let remainingExpression = `(${expression.trim()}`
+		.replace(negationRegex, match => `${match[0]}(!`)
+		.replace(negativeSignRegex, match => `${match[0]}(-1 * `);
 
 	while (remainingExpression.length) {
 		nextOperation = remainingExpression.match(operationRegex)[0];
@@ -273,11 +350,8 @@ function resolveExpression (expression, ...stack) {
 		const nextOperator = remainingExpression[0];
 		const value = resolveValue(nextOperation.slice(1), ...stack);
 
-		if (currentOperator === ' ' || delayOperation(currentOperator, nextOperator)) {
-			if (currentOperator !== ' ') {
-				operatorStack.splice(0, 0, currentOperator);
-			}
-
+		if (delayOperation(currentOperator, nextOperator)) {
+			operatorStack.splice(0, 0, currentOperator);
 			valueStack.splice(0, 0, value);
 		} else {
 			valueStack[0] = resolveOperation(valueStack[0], currentOperator, value);
@@ -290,17 +364,23 @@ function resolveExpression (expression, ...stack) {
 		}
 	}
 
-	return valueStack[0];
+	const result = valueStack[0];
+
+	if (result !== null && typeof result === 'object' && !Object.keys(result).length) {
+		return;
+	}
+
+	return result;
 }
 
-export default function resolveBlock (block, ...stack) {
+export default function resolve (block, ...stack) {
 	switch (typeof block) {
 		case 'object': {
 			if (!block) {
 				break;
 			}
 
-			let variables = resolveBlock(block._, ...stack, null);
+			let variables = resolve(block._, ...stack, null);
 			let result;
 
 			if (variables === null) {
@@ -315,14 +395,14 @@ export default function resolveBlock (block, ...stack) {
 				const reduction = { ...block, _: undefined };
 
 				result = variables
-					.map(item => resolveBlock(reduction, item, ...stack))
+					.map(item => resolve(reduction, item, ...stack))
 					.filter(value => value !== null);
 
 				if (result.length === 0) {
 					break;
 				}
 			} else {
-				result = resolveBlock(block.$, variables, ...stack);
+				result = resolve(block.$, variables, ...stack);
 
 				if (typeof result !== 'object') {
 					return result;
@@ -337,7 +417,7 @@ export default function resolveBlock (block, ...stack) {
 						continue;
 					}
 
-					const value = resolveBlock(block[key], variables, ...stack);
+					const value = resolve(block[key], variables, ...stack);
 					const isDefined = !isEmpty(value);
 
 					if (isDefined || allowEmpty) {
@@ -356,8 +436,13 @@ export default function resolveBlock (block, ...stack) {
 
 			return result;
 		}
-		case 'string':
-			return resolveExpression(block, ...stack);
+		case 'string': {
+			const result = resolveExpression(block, ...stack);
+			
+			if (!isEmpty(result)) {
+				return result;
+			}
+		}
 	}
 	
 	return null;
