@@ -10,7 +10,7 @@ const arrayDefinition = `(\\[(${stringDefinition}|[^\\]])*\\])`;
 const elementDefinition = `< *${typeDefinition} *(${arrayDefinition}(${stringDefinition}|[^>])*)?>`;
 const wrapperDefinition = `(${elementDefinition}|${arrayDefinition}|${objectDefinition}|${stringDefinition})`;
 
-const operatorDefinition = '()|&=!<>#+\\-/*%^.';
+const operatorDefinition = '()|&=!<>#+\\-/*%^.\\?';
 const operandDefinition = `((${wrapperDefinition}|${numberDefinition}|[^${operatorDefinition}:,])*)`;
 const operationDefinition = `([${operatorDefinition}] *${operandDefinition})`;
 const expressionDefinition = `((${stringDefinition}|[^:,])*)`;
@@ -30,6 +30,7 @@ const operationRegex = new RegExp(`^${operationDefinition} *`);
 const expressionRegex = new RegExp(`^ *${expressionDefinition} *$`);
 const negativeSignRegex = new RegExp(`[${operatorDefinition}] *-(?=${variableDefinition}|\\()`);
 const negationRegex = new RegExp(`[${operatorDefinition}] *!(?=${operandDefinition})`);
+const existenceRegex = new RegExp(`[${operatorDefinition}] *\\?(?=${operandDefinition})`);
 
 const escapedCharacterRegexMap = {
 	'\'': /\\'/g,
@@ -86,10 +87,13 @@ Element.prototype.render = function (content) {
 	return `${tag}${content}</${type}>`;
 };
 
-function isEmpty (value) {
-	if (value === undefined || value === null || typeof value === 'number' && isNaN(value)) {
+function isEmpty (value, isStrict) {
+	if (value === undefined || value === null || typeof value === 'number' && isNaN(value)
+			|| isStrict && (value === '' || (typeof value === 'object' && !Object.keys(value).length))) {
 		return true;
 	}
+
+	return false;
 }
 
 function isEqual (firstValue, secondValue, allowExtraProperties) {
@@ -130,7 +134,8 @@ function mergeObjects (first, second) {
 		}).concat(firstLength < secondLength ? second.slice(firstLength) : first.slice(secondLength));
 
 		return result;
-	} else if (typeof first !== 'object' || typeof second !== 'object'
+	} else if (first === null || second === null
+			|| typeof first !== 'object' || typeof second !== 'object'
 			|| Array.isArray(first) || Array.isArray(second)) {
 		return second;
 	}
@@ -350,7 +355,7 @@ function resolveOperation (firstValue, operator, secondValue) {
 		case '!:empty:structure':
 		case '!:empty:literal':
 		case '!:empty:empty':
-			result = firstValue === undefined ? !secondValue : null;
+			result = firstValue === undefined ? isEmpty(secondValue, true) : null;
 			break;
 		case '<:structure:structure':
 			result = isEqual(secondValue, firstValue, true) ? firstValue : null;
@@ -366,6 +371,11 @@ function resolveOperation (firstValue, operator, secondValue) {
 			break;
 		case '+:literal:literal':
 			result = firstValue + secondValue;
+			break;
+		case '?:empty:structure':
+		case '?:empty:literal':
+		case '?:empty:empty':
+			result = firstValue === undefined ? !isEmpty(secondValue, true) : null;
 			break;
 	}
 
@@ -471,6 +481,7 @@ function resolveExpression (expression, ...stack) {
 	
 	let remainingExpression = `(${expression.trim()}`
 		.replace(negationRegex, match => `${match[0]}(!`)
+		.replace(existenceRegex, match => `${match[0]}(?`)
 		.replace(negativeSignRegex, match => `${match[0]}(-1 * `);
 
 	while (remainingExpression.length) {
@@ -534,51 +545,66 @@ export default function resolve (template, ...stack) {
 		return !isEmpty(result) ? result : null;
 	} else if (Array.isArray(template)) {
 		let result = [];
+		let local = stack[0];
+		let distant = stack.slice(1);
 		let count = 0;
+		let keepArray = false;
 		let previous;
 
 		template.concat(['']).forEach(templateItem => {
 			const isArray = Array.isArray(templateItem);
+			let container;
 
-			if (previous && isArray) {
-				let container = (typeof previous === 'string' ? resolveExpression : resolve)(previous, ...stack);
+			if (previous) {
+				const resolver = typeof previous === 'string' ? resolveExpression : resolve
+				container = resolver(previous, local, ...distant);
+			} else if (isArray) {
+				container = '';
+			}
+
+			if (!isEmpty(container) && container !== false) {
 				count++;
 
-				if (!isEmpty(container)) {
-					if (!Array.isArray(container)) {
-						container = [container];
-					} else {
-						count++;
-					}
+				if (!Array.isArray(container)) {
+					container = [container];
+				} else {
+					keepArray = true;
+				}
 
-					const isElement = container[0] instanceof Element;
+				const isElement = container[0] instanceof Element;
+				keepArray = !isElement && keepArray;
 
-					container.forEach(containerItem => {
-						const scope = isElement ? containerItem.scope : containerItem;
-						const content = resolve(templateItem, scope, ...stack);
+				container.forEach(containerItem => {
+					let scope = isElement ? containerItem.scope : (containerItem || null);
+					scope = scope !== true ? scope : null;
+					const content = isArray ? resolve(templateItem, scope, local, ...distant) : scope;
 
-						if (!isEmpty(content)) {
-							result = result.concat(isElement ? containerItem.render(content) : content);
+					if (!isEmpty(content)) {
+						if (!isElement) {
+							if (Array.isArray(content)) {
+								keepArray = true;
+							} else if (typeof content === 'object') {
+								local = mergeObjects(local, content);
+							}
 						}
-					});
-				}
-			} else if (previous || isArray) {
-				const content = resolve(previous ? previous : item, ...stack);
-				count++;
 
-				if (!isEmpty(content)) {
-					result = result.concat(content);
-				}
+						result = result.concat(isElement ? containerItem.render(content) : content);
+					}
+				});
 			}
 
 			previous = !isArray ? templateItem : undefined;
 		});
 
-		if (count < 2) {
-			return !isEmpty(result[0]) ? result[0] : null;
+		if (!keepArray) {
+			if (result.length === 0) {
+				return null;
+			}
+
+			result = result.reduce((result, item) => resolveOperation(result, '+', item));
 		}
 
-		return result.length > 0 ? result : null;
+		return !isEmpty(result) ? result : null;
 	} else if (typeof template === 'object') {
 		const result = {};
 

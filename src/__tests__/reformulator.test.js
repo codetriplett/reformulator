@@ -657,13 +657,31 @@ describe('reformulator', () => {
 			expect(resolve('@."a"', 2)).toBeNull();
 		});
 	});
+	
+	describe('?', () => {
+		it('should return true if value exists', () => {
+			expect(resolve('?a', { a: 'a' })).toBe(true);
+		});
+
+		it('should return false if value does not exist', () => {
+			expect(resolve('?b', { a: 'a' })).toBe(false);
+		});
+	});
 
 	describe('template', () => {
 		it('should return single result by itself', () => {
 			expect(resolve([{ x: '@ + "b"'}], 'a')).toEqual({ x: 'ab' });
 		});
+
+		it('should return array if the only container is an array', () => {
+			expect(resolve(['a'], { a: [1] })).toEqual([1]);
+		});
+
+		it('should return array if the only content is an array', () => {
+			expect(resolve(['x', ['a']], { x: { a: [1] } })).toEqual([1]);
+		});
 		
-		it('should scope sub template by the value that came before it', () => {
+		it('should scope sub template to the value that came before it', () => {
 			expect(resolve([
 				'a', [
 					'@ + 1'
@@ -679,6 +697,23 @@ describe('reformulator', () => {
 			], 'a')).toBeNull();
 		});
 		
+		it('should merge objects in template', () => {
+			expect(resolve([
+				'a', [{
+					keep: 'a',
+					overwrite: 'a'
+				}],
+				'keep & b', [{
+					overwrite: 'b',
+					add: 'a + b'
+				}]
+			], { a: 'a', b: 'b' })).toEqual({
+				keep: 'a',
+				overwrite: 'b',
+				add: 'ab'
+			});
+		});
+		
 		it('should set contents of element', () => {
 			expect(resolve([
 				'<div>', [
@@ -692,10 +727,7 @@ describe('reformulator', () => {
 				'<p [x] @>', [
 					'@'
 				]
-			], { x: ['a', 'b'] })).toEqual([
-				'<p class="a">a</p>',
-				'<p class="b">b</p>'
-			]);
+			], { x: ['a', 'b'] })).toEqual('<p class="a">a</p><p class="b">b</p>');
 		});
 		
 		it('should skip element if result of sub template is empty', () => {
@@ -710,10 +742,7 @@ describe('reformulator', () => {
 			expect(resolve([
 				'<p [@ + "b"]>',
 				'<p [@ + "c"]>'
-			], 'a')).toEqual([
-				'<p>ab</p>',
-				'<p>ac</p>'
-			]);
+			], 'a')).toEqual('<p>ab</p><p>ac</p>');
 		});
 
 		it('should work with something more complicated', () => {

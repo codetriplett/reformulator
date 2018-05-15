@@ -2,7 +2,7 @@
 Transforms an object using a structured set of expressions. The transformation allows rescoping variables, iterating over arrays and rendering HTML, all without the need for writing your own logic in JavaScript. Results of transformations can be objects, arrays, numbers or strings. Since no JavaScript needs to be written, the transformation object can be stored in JSON. This package will add no additional dependencies to your project.
 
 ## Template
-An array can be passed as the first parameter to relate container objects with content arrays. Each item that is not itself an array will be treated as a container object and the array that immediately follows, if it exists, will be its content. The container will provide a new scope for itself and its content. If a container does not have a content array, its scope will be its content. If a content array does not have a container, its scope will be the same as the one that would have been used to create the container. If the container is an HTML element, the content will be surrounded by opening and closing tags. If the scope of the container is empty, it will not be returned and its content will be ignored. If the scope of the container is an array it and its content will be processed together for each item in the array. If there is only one possible container in the template and its scope is not an array, it will be returned as the result of the template. Otherwise the result will be an array.
+An array can be passed as the first parameter to define container objects and their content. Each item that is not itself an array will be treated as a container object and the array that immediately follows, if it exists, will be its content. The container will provide a new scope for itself and its content. If a container does not have a content array, its scope will be its content. If a container does have a content array, but produces an empty result, it and its container will be ignored. If a content array does not have a container or the container resolves to true, no new scope is set. If the scope of the container is empty or false, it will not be returned and its content will be ignored. If the scope of the container is an array, it and its content will be processed together for each item in the array. If a container resolves to an object, its properties can be used in the container that follows it in the template. If the container is an HTML element, the content will be surrounded by opening and closing tags. If there is only one possible container in the template and it is an array or it is not an element and its content is an array, that array will be returned as the result of the template. Otherwise the result will be either a concatenation of the strings or a full merge of all the objects.
 
 ## Values
 Arrays, objects, strings, numbers and boolean values can be referenced through variables in the expression string and read from the data you provide or be defined directly in the expression string. Expressions in objects, arrays and elements can only contain variables, strints, number or boolean values.
@@ -12,6 +12,12 @@ Any text not surrounded by quotes will be treated as a variable name to read fro
 
 #### @
 This can be used to reference the immediate scope. It is useful when the scope is a string or a number or if you don't want to use scopes higher up in the stack.
+
+#### ?
+When placed immediately before a variable, the value will be a boolean 'false' if the variable is empty, otherwise it will be a boolean 'true'. A value will be considered empty if it is undefined, null, NaN, an empty string, an object with no properties or an array with no items.
+
+#### !
+When placed immediately before a variable, the value will be a boolean 'true' if the variable is not empty, otherwise it will be a boolean 'false'. A value will be considered empty if it is undefined, null, NaN, an empty string, an object with no properties or an array with no items.
 
 ### Strings
 Strings can be defined by surrounding text in either single or double quotes. If the type of quote that was used to surround the string needs to also exists in the content of the string, it should be preceded by two backslashes.
