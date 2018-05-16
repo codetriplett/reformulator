@@ -740,8 +740,9 @@ describe('reformulator', () => {
 		
 		it('should append multiple results into one string', () => {
 			expect(resolve([
-				'<p [@ + "b"]>',
-				'<p [@ + "c"]>'
+				{ x: '@' },
+				'<p [x + "b"]>',
+				'<p [x + "c"]>'
 			], 'a')).toEqual('<p>ab</p><p>ac</p>');
 		});
 

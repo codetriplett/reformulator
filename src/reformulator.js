@@ -601,7 +601,10 @@ export default function resolve (template, ...stack) {
 				return null;
 			}
 
-			result = result.reduce((result, item) => resolveOperation(result, '+', item));
+			result = result.reduce((result, item) => {
+				const merge = resolveOperation(result, '+', item);
+				return typeof merge === typeof item && merge !== null ? merge : item;
+			});
 		}
 
 		return !isEmpty(result) ? result : null;
