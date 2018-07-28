@@ -15,6 +15,9 @@ const operandDefinition = `((${wrapperDefinition}|${numberDefinition}|[^${operat
 const operationDefinition = `([${operatorDefinition}] *${operandDefinition})`;
 const expressionDefinition = `((${stringDefinition}|[^:,])*)`;
 
+const htmlDefinition = ` *< *${typeDefinition}( *${variableDefinition}( *=${stringDefinition})?)*>`;
+const stateDefinition = `(<!--( ${variableDefinition})+ -->)`;
+
 const booleanRegex = /^(true|false)$/;
 const literalTypeRegex = /^(string|number)$/;
 const spaceRegex = / +/g;
@@ -31,6 +34,8 @@ const expressionRegex = new RegExp(`^ *${expressionDefinition} *$`);
 const negativeSignRegex = new RegExp(`[${operatorDefinition}] *-(?=${variableDefinition}|\\()`);
 const negationRegex = new RegExp(`[${operatorDefinition}] *!(?=${operandDefinition})`);
 const existenceRegex = new RegExp(`[${operatorDefinition}] *\\?(?=${operandDefinition})`);
+const htmlRegex = new RegExp(`^${htmlDefinition}`);
+const stateRegex = new RegExp(`${stateDefinition}?$`);
 
 const escapedCharacterRegexMap = {
 	'\'': /\\'/g,
@@ -38,33 +43,37 @@ const escapedCharacterRegexMap = {
 };
 
 const defaultAttributes = {
-	img: { alt: '' }
+	img: { alt: '' },
+	a: { href: 'javascript:void(0);' }
 };
 
-function Element (type, options = {}) {
+function ElementStructure (type, options = {}) {
 	this.type = type;
 	this.scope = options.scope;
 	this.classNames = options.classNames || [];
 	this.attributes = mergeObjects(defaultAttributes[type] || {}, options.attributes || {});
 }
 
-Element.prototype.render = function (content) {
+ElementStructure.prototype.render = function (content) {
 	const type = this.type;
 	const classNames = this.classNames;
 	const attributes = this.attributes;
 
 	const classString = classNames.length > 0 ? ` class="${classNames.sort().join(' ')}"` : '';
+	let stateString = '';
 	let attributeString = '';
 	let flagString = '';
 	
 	Object.keys(attributes).sort().forEach(key => {
 		const value = attributes[key];
-		let valueString = '';
+		let keyString = ` ${key}`;
 		
-		if (literalTypeRegex.test(typeof value)) {
-			attributeString += ` ${key}="${value}"`;
+		if (key.indexOf('on') === 0) {
+			stateString = keyString;
+		} else if (literalTypeRegex.test(typeof value)) {
+			attributeString += `${keyString}="${value}"`;
 		} else if (value === true) {
-			flagString += ` ${key}`;
+			flagString += keyString;
 		}
 	});
 
@@ -84,7 +93,7 @@ Element.prototype.render = function (content) {
 		.filter(item => literalTypeRegex.test(typeof item))
 		.join('');
 
-	return `${tag}${content}</${type}>`;
+	return `${tag}${content}</${type}>${stateString ? `<!--${stateString} -->` : ''}`;
 };
 
 function isEmpty (value, isStrict) {
@@ -157,7 +166,21 @@ function mergeObjects (first, second) {
 	return result;
 }
 
+function extractState (string, variables) {
+	if (typeof string === 'string') {
+		const stateString = string.match(stateRegex)[0];
+
+		if (stateString) {
+			stateString.slice(4, -3).trim().split(' ').forEach(key => variables[key] = true);
+			return string.slice(0, -stateString.length);
+		}
+	}
+
+	return string;
+}
+
 function resolveStructure (string, ...stack) {
+	const isAttributeStructure = string[0] === '<';
 	let remainingString = `${string.slice(1, -1)},`;
 	let array = [];
 	const object = {};
@@ -172,13 +195,15 @@ function resolveStructure (string, ...stack) {
 
 		const key = remainingString.slice(0, colonIndex).trim();
 		const expression = remainingString.slice(colonIndex + 1, commaIndex);
+		const isEvent = isAttributeStructure && key.indexOf('on') === 0;
+
 		remainingString = remainingString.slice(commaIndex + 1);
 
 		if ((colonIndex !== -1 && !variableRegex.test(key)) || !expressionRegex.test(expression)) {
 			return;
 		}
 
-		const value = resolveExpression(expression, ...stack);
+		const value = resolveExpression(expression, ...stack) || isEvent || null;
 
 		if (isEmpty(value)) {
 			continue;
@@ -203,7 +228,7 @@ function resolveElement (string, ...stack) {
 	}
 
 	if (bracketIndex === -1) {
-		return new Element(type);
+		return new ElementStructure(type);
 	}
 
 	const scopeExpression = string.slice(bracketIndex).match(scopeRegex)[0].slice(1, -1).trim();
@@ -235,7 +260,7 @@ function resolveElement (string, ...stack) {
 		return array.concat(typeof item === 'string' ? item.trim().split(spaceRegex) : item);
 	}, []);
 
-	return new Element(type, { scope, classNames, attributes });
+	return new ElementStructure(type, { scope, classNames, attributes });
 }
 
 function resolveValue (value, ...stack) {
@@ -521,23 +546,23 @@ function resolveExpression (expression, ...stack) {
 	return result;
 }
 
-export default function resolve (template, ...stack) {
+export function resolveTemplate (template, ...stack) {
 	if (!template) {
 		return null;
 	} else if (Array.isArray(stack[0])) {
 		const remaining = stack.slice(1);
 
 		const result = stack[0]
-			.map(item => resolve(template, item, ...remaining))
+			.map(item => resolveTemplate(template, item, ...remaining))
 			.filter(value => !isEmpty(value));
 
 		return result.length > 0 ? result : null;
 	} else if (typeof template === 'string') {
 		let result = resolveExpression(template, ...stack);
 
-		if (result instanceof Element) {
+		if (result instanceof ElementStructure) {
 			return result.render();
-		} else if (Array.isArray(result) && result[0] instanceof Element) {
+		} else if (Array.isArray(result) && result[0] instanceof ElementStructure) {
 			result = result.map(item => item.render());
 			result = result.length > 0 ? result : null;
 		}
@@ -549,6 +574,7 @@ export default function resolve (template, ...stack) {
 		let distant = stack.slice(1);
 		let count = 0;
 		let keepArray = false;
+		const stateVariables = {};
 		let previous;
 
 		template.concat(['']).forEach(templateItem => {
@@ -556,7 +582,7 @@ export default function resolve (template, ...stack) {
 			let container;
 
 			if (previous) {
-				const resolver = typeof previous === 'string' ? resolveExpression : resolve
+				const resolver = typeof previous === 'string' ? resolveExpression : resolveTemplate
 				container = resolver(previous, local, ...distant);
 			} else if (isArray) {
 				container = '';
@@ -571,15 +597,16 @@ export default function resolve (template, ...stack) {
 					keepArray = true;
 				}
 
-				const isElement = container[0] instanceof Element;
+				const isElement = container[0] instanceof ElementStructure;
+
 				keepArray = !isElement && keepArray;
 
 				container.forEach(containerItem => {
 					let scope = isElement ? containerItem.scope : (containerItem || null);
 					scope = scope !== true ? scope : null;
-					const content = isArray ? resolve(templateItem, scope, local, ...distant) : scope;
+					let content = isArray ? resolveTemplate(templateItem, scope, local, ...distant) : scope;
 
-					if (!isEmpty(content)) {
+					if (!isEmpty(content) || scope === null || templateItem.length === 0) {
 						if (!isElement) {
 							if (Array.isArray(content)) {
 								keepArray = true;
@@ -588,7 +615,17 @@ export default function resolve (template, ...stack) {
 							}
 						}
 
-						result = result.concat(isElement ? containerItem.render(content) : content);
+						if (isElement) {
+							content = extractState(content, stateVariables);
+						}
+
+						let renderedContent = isElement ? containerItem.render(content) : content;
+
+						if (isElement) {
+							renderedContent = extractState(renderedContent, stateVariables);
+						}
+
+						result = result.concat(renderedContent);
 					}
 				});
 			}
@@ -599,6 +636,12 @@ export default function resolve (template, ...stack) {
 		if (!keepArray) {
 			if (result.length === 0) {
 				return null;
+			}
+			
+			const stateString = Object.keys(stateVariables).join(' ');
+			
+			if (stateString) {
+				result.push(`<!-- ${stateString} -->`);
 			}
 
 			result = result.reduce((result, item) => {
@@ -612,7 +655,7 @@ export default function resolve (template, ...stack) {
 		const result = {};
 
 		Object.keys(template).forEach(key => {
-			const value = resolve(template[key], ...stack);
+			const value = resolveTemplate(template[key], ...stack);
 
 			if (!isEmpty(value)) {
 				result[key] = value;
@@ -620,5 +663,26 @@ export default function resolve (template, ...stack) {
 		});
 
 		return Object.keys(result).length > 0 ? result : null;
+	}
+}
+
+export default (template, ...stack) => {
+	let element = stack[stack.length - 1];
+	
+	if (!(element instanceof Element) && document && typeof document.querySelector === 'function') {
+		const scripts = document.querySelectorAll('script');
+		element = scripts && scripts.length > 0 && scripts[scripts.length - 1].previousSibling;
+	}
+
+	const stateVariables = {};
+	const result = extractState(resolveTemplate(template, ...stack), stateVariables);
+
+	if (element) {
+		return element;
+	} else if (htmlRegex.test(result) && Object.keys(stateVariables).length > 0) {
+		const stringifiedParams = [template].concat(stack).map(param => JSON.stringify(param));
+		return `${result}<script>resolve(${stringifiedParams.join(', ')});</script>`;
+	} else {
+		return result;
 	}
 }

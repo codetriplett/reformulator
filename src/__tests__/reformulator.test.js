@@ -722,6 +722,10 @@ describe('reformulator', () => {
 			], 'a')).toBe('<div><p>a</p></div>');
 		});
 		
+		it('should allow empty elements if the scope was also empty', () => {
+			expect(resolve(['<div []>'])).toBe('<div></div>');
+		});
+		
 		it('should scope and wrap each sub template of an element properly', () => {
 			expect(resolve([
 				'<p [x] @>', [
@@ -736,6 +740,12 @@ describe('reformulator', () => {
 					'a'
 				]
 			])).toBeNull();
+		});
+		
+		it('should still render container if sub template is empty', () => {
+			expect(resolve([
+				'<div>', []
+			])).toBe('<div></div>');
 		});
 		
 		it('should append multiple results into one string', () => {
@@ -796,6 +806,38 @@ describe('reformulator', () => {
 				'<li><img class="image" alt="image three" src="/three.jpg"></li>',
 				'</ul>'
 			].join(''));
+		});
+	});
+
+	describe('client side', () => {
+		beforeEach(() => {
+			document.body.innerHTML = '';
+		});
+
+		it('should not include client side initializer if not needed', () => {
+			expect(resolve('<p ["a"]>')).toBe('<p>a</p>');
+		});
+
+		it('should include client side initializer if needed', () => {
+			expect(resolve('<a [@ + (on & "Off" | "On")] onclick: on>', 'Turn ')).toBe([
+				'<a href="javascript:void(0);">Turn On</a>',
+				'<script>resolve("<a [@ + (on & \\"Off\\" | \\"On\\")] onclick: on>", "Turn ");</script>'
+			].join(''));
+		});
+		
+		it('should handle click events', () => {
+			const element = document.createElement('a');
+			expect(resolve('<a [@ + (on & "Off" | "On")] onclick: on>', 'Turn ', element)).toBe(element);
+		});
+		
+		it('should handle click events', () => {
+			document.body.innerHTML = [
+				'<a href="javascript:void(0);">Turn On</a>',
+				'<script>resolve("<a [@ + (on & \\"Off\\" | \\"On\\")] onclick: on>", "Turn ");</script>'
+			].join('');
+
+			const element = document.querySelector('a');
+			expect(resolve('<a [@ + (on & "Off" | "On")] onclick: on>', 'Turn ')).toBe(element);
 		});
 	});
 });
