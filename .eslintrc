@@ -9,7 +9,9 @@
         "sourceType": "module"
     },
     "globals": {
-        "document": true
+        "window": true,
+        "document": true,
+        "Element": true
     },
     "rules": {
         "indent": [
