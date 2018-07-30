@@ -1,8 +1,8 @@
 import { isEmpty } from './is-empty';
 
-export function isEqual (firstValue, secondValue, allowExtraProperties) {
-	if ((firstValue === null || typeof firstValue !== 'object')
-			&& (secondValue === null || typeof secondValue !== 'object')) {
+export function isEqual (firstValue, secondValue, relaxed) {
+	if (firstValue === null || typeof firstValue !== 'object'
+			|| secondValue === null || typeof secondValue !== 'object') {
 		return firstValue === secondValue;
 	}
 
@@ -13,16 +13,16 @@ export function isEqual (firstValue, secondValue, allowExtraProperties) {
 	const firstValueKeys = Object.keys(firstValue);
 	const secondValueKeys = Object.keys(secondValue);
 
-	if (!allowExtraProperties && firstValueKeys.length !== secondValueKeys.length
-			|| allowExtraProperties && firstValueKeys.length <= secondValueKeys.length) {
+	if (!relaxed && firstValueKeys.length !== secondValueKeys.length
+			|| relaxed && firstValueKeys.length < secondValueKeys.length) {
 		return false;
 	}
 
-	secondValueKeys.forEach(key => {
-		if (!isEqual(firstValue[key], secondValue[key], allowExtraProperties)) {
+	for (const key of secondValueKeys) {
+		if (!isEqual(firstValue[key], secondValue[key], relaxed)) {
 			return false;
 		}
-	});
+	}
 
 	return true;
 }

@@ -1,7 +1,7 @@
 import {
 	variableRegex,
 	stringDefinition
-} from './variables';
+} from './patterns';
 
 import { isEmpty } from './is-empty';
 import { resolveExpression } from './resolve-expression';
@@ -10,7 +10,9 @@ const expressionDefinition = `((${stringDefinition}|[^:,])*)`;
 const expressionRegex = new RegExp(`^ *${expressionDefinition} *$`);
 
 export function resolveStructure (string, ...stack) {
-	const isAttributeStructure = string[0] === '<';
+	const keepObject = string[0] === '{' || string[0] === '<';
+	const keepArray = string[0] === '[' || string[0] === '<';
+	const keepBoth = keepObject && keepArray;
 	let remainingString = `${string.slice(1, -1)},`;
 	let array = [];
 	const object = {};
@@ -25,12 +27,12 @@ export function resolveStructure (string, ...stack) {
 
 		const key = remainingString.slice(0, colonIndex).trim();
 		const expression = remainingString.slice(colonIndex + 1, commaIndex);
-		const isEvent = isAttributeStructure && key.indexOf('on') === 0;
+		const isEvent = keepBoth && key.indexOf('on') === 0;
 
 		remainingString = remainingString.slice(commaIndex + 1);
 
 		if ((colonIndex !== -1 && !variableRegex.test(key)) || !expressionRegex.test(expression)) {
-			return;
+			return null;
 		}
 
 		const value = resolveExpression(expression, ...stack) || isEvent || null;
@@ -46,5 +48,15 @@ export function resolveStructure (string, ...stack) {
 		}
 	}
 
-	return [object].concat(array);
+	if (keepBoth) {
+		object[''] = array;
+	}
+
+	if (keepObject) {
+		return object;
+	} else if (keepArray) {
+		return array;
+	}
+
+	return null;
 }

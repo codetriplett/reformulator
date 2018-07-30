@@ -65,13 +65,13 @@ export function resolveOperation (firstValue, operator, secondValue) {
 			result = firstValue === undefined ? isEmpty(secondValue, true) : null;
 			break;
 		case '<:structure:structure':
-			result = isEqual(secondValue, firstValue, true) ? firstValue : null;
+			result = isEqual(secondValue, firstValue, true) && !isEqual(secondValue, firstValue) ? firstValue : null;
 			break;
 		case '<:literal:literal':
 			result = firstValue < secondValue ? firstValue : null;
 			break;
 		case '>:structure:structure':
-			result = isEqual(firstValue, secondValue, true) ? firstValue : null;
+			result = isEqual(firstValue, secondValue, true) && !isEqual(firstValue, secondValue) ? firstValue : null;
 			break;
 		case '>:literal:literal':
 			result = firstValue > secondValue ? firstValue : null;

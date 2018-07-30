@@ -57,10 +57,10 @@ module.exports = function (grunt) {
 			},
 			dist: {
 				src: [
-					'temp/variables.js',
+					'temp/patterns.js',
+					'temp/environment.js',
 					'temp/delay-operation.js',
 					'temp/element-structure.js',
-					'temp/extract-state.js',
 					'temp/is-empty.js',
 					'temp/is-equal.js',
 					'temp/merge-objects.js',
@@ -80,10 +80,11 @@ module.exports = function (grunt) {
 				files: {
 					'lib/delay-operation.js': 'src/delay-operation.js',
 					'lib/element-structure.js': 'src/element-structure.js',
-					'lib/extract-state.js': 'src/extract-state.js',
+					'lib/environment.js': 'src/environment.js',
 					'lib/is-empty.js': 'src/is-empty.js',
 					'lib/is-equal.js': 'src/is-equal.js',
 					'lib/merge-objects.js': 'src/merge-objects.js',
+					'lib/patterns.js': 'src/patterns.js',
 					'lib/reformulator.js': 'src/reformulator.js',
 					'lib/resolve-element.js': 'src/resolve-element.js',
 					'lib/resolve-expression.js': 'src/resolve-expression.js',
@@ -91,7 +92,6 @@ module.exports = function (grunt) {
 					'lib/resolve-structure.js': 'src/resolve-structure.js',
 					'lib/resolve-template.js': 'src/resolve-template.js',
 					'lib/resolve-value.js': 'src/resolve-value.js',
-					'lib/variables.js': 'src/variables.js',
 					'temp/reformulator.js': 'temp/reformulator.js'
 				}
 			}

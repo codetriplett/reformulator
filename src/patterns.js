@@ -5,3 +5,4 @@ export const objectDefinition = `(\\{(${stringDefinition}|[^}])*\\})`;
 export const arrayDefinition = `(\\[(${stringDefinition}|[^\\]])*\\])`;
 export const elementDefinition = `< *${typeDefinition} *(${arrayDefinition}(${stringDefinition}|[^>])*)?>`;
 export const variableRegex = new RegExp(`^${variableDefinition}$`);
+export const spaceRegex = / +/g;

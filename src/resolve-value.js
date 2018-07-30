@@ -4,7 +4,7 @@ import {
 	arrayDefinition,
 	elementDefinition,
 	variableRegex
-} from './variables';
+} from './patterns';
 
 import { isEmpty } from './is-empty';
 import { resolveElement } from './resolve-element';
@@ -36,12 +36,8 @@ export function resolveValue (value, ...stack) {
 			.replace(escapedCharacterRegexMap[escapedQuote], escapedQuote);
 	} else if (booleanRegex.test(trimmedValue)) {
 		return trimmedValue === 'true';
-	} else if (objectRegex.test(trimmedValue)) {
-		const structure = resolveStructure(trimmedValue, ...stack);
-		return structure ? structure[0] : null;
-	} else if (arrayRegex.test(trimmedValue)) {
-		const structure = resolveStructure(trimmedValue, ...stack);
-		return structure ? structure.slice(1) : null;
+	} else if (objectRegex.test(trimmedValue) || arrayRegex.test(trimmedValue)) {
+		return resolveStructure(trimmedValue, ...stack);
 	} else if (elementRegex.test(trimmedValue)) {
 		return resolveElement(trimmedValue, ...stack);
 	} else if (!variableRegex.test(trimmedValue) && trimmedValue !== '@') {

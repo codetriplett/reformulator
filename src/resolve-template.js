@@ -1,123 +1,72 @@
 import { ElementStructure } from './element-structure';
-import { extractState } from './extract-state';
 import { isEmpty } from './is-empty';
-import { mergeObjects } from './merge-objects';
 import { resolveExpression } from './resolve-expression';
-import { resolveOperation } from './resolve-operation';
 
 export function resolveTemplate (template, ...stack) {
+	let result;
+
 	if (!template) {
 		return null;
-	} else if (Array.isArray(stack[0])) {
-		const remaining = stack.slice(1);
-
-		const result = stack[0]
-			.map(item => resolveTemplate(template, item, ...remaining))
-			.filter(value => !isEmpty(value));
-
-		return result.length > 0 ? result : null;
-	} else if (typeof template === 'string') {
-		let result = resolveExpression(template, ...stack);
-
-		if (result instanceof ElementStructure) {
-			return result.render();
-		} else if (Array.isArray(result) && result[0] instanceof ElementStructure) {
-			result = result.map(item => item.render());
-			result = result.length > 0 ? result : null;
-		}
-
-		return !isEmpty(result) ? result : null;
 	} else if (Array.isArray(template)) {
-		let result = [];
-		let local = stack[0];
-		let distant = stack.slice(1);
-		let keepArray = false;
-		const stateVariables = {};
-		let previous;
+		result = [];
 
-		template.concat(['']).forEach(templateItem => {
-			const isArray = Array.isArray(templateItem);
-			let container;
+		let previousStage = 0;
+		let firstInStack = stack[0];
+		let containerArray = [firstInStack];
+		const remainingStack = stack.slice(1);
 
-			if (previous) {
-				const resolver = typeof previous === 'string' ? resolveExpression : resolveTemplate;
-				container = resolver(previous, local, ...distant);
-			} else if (isArray) {
-				container = '';
+		(template.concat('@')).forEach(item => {
+			const isArray = Array.isArray(item);
+			let currentStage;
+
+			if (isArray) {
+				currentStage = 2;
+			} else if (typeof item === 'string') {
+				currentStage = 1;
+			} else if (typeof item === 'object') {
+				currentStage = 0;
 			}
 
-			if (!isEmpty(container) && container !== false) {
-				if (!Array.isArray(container)) {
-					container = [container];
-				} else {
-					keepArray = true;
+			if (previousStage && currentStage <= previousStage) {
+				if (!isEmpty(containerArray, true)) {
+					result = result.concat(containerArray);
 				}
 
-				const isElement = container[0] instanceof ElementStructure;
-
-				keepArray = !isElement && keepArray;
-
-				container.forEach(containerItem => {
-					let scope = isElement ? containerItem.scope : (containerItem || null);
-					scope = scope !== true ? scope : null;
-					let content = isArray ? resolveTemplate(templateItem, scope, local, ...distant) : scope;
-
-					if (!isEmpty(content) || scope === null || templateItem.length === 0) {
-						if (!isElement) {
-							if (Array.isArray(content)) {
-								keepArray = true;
-							} else if (typeof content === 'object') {
-								local = mergeObjects(local, content);
-							}
-						}
-
-						if (isElement) {
-							content = extractState(content, stateVariables);
-						}
-
-						let renderedContent = isElement ? containerItem.render(content) : content;
-
-						if (isElement) {
-							renderedContent = extractState(renderedContent, stateVariables);
-						}
-
-						result = result.concat(renderedContent);
-					}
-				});
+				containerArray = [firstInStack];
 			}
+			
+			containerArray = containerArray.reduce((containerArray, container) => {
+				const containerIsElement = container instanceof ElementStructure;
+				const local = [containerIsElement ? container.scope : container].filter(item => item);
+				const value = resolveTemplate(item, ...local, ...remainingStack);
+				const valueIsEmpty = isEmpty(value, true);
 
-			previous = !isArray ? templateItem : undefined;
+				if (valueIsEmpty && (!isArray || item.length > 0)) {
+					container = [];
+				} else if (currentStage < 2) {
+					container = value;
+				} else if (isArray && item.length > 0) {
+					container = containerIsElement ? container.append(value) : value;
+				}
+
+				return containerArray.concat(container);
+			}, []);
+
+			previousStage = currentStage;
 		});
-
-		if (!keepArray) {
-			if (result.length === 0) {
-				return null;
-			}
-			
-			const stateString = Object.keys(stateVariables).join(' ');
-			
-			if (stateString) {
-				result.push(`<!-- ${stateString} -->`);
-			}
-
-			result = result.reduce((result, item) => {
-				const merge = resolveOperation(result, '+', item);
-				return typeof merge === typeof item && merge !== null ? merge : item;
-			});
-		}
-
-		return !isEmpty(result) ? result : null;
 	} else if (typeof template === 'object') {
-		const result = {};
+		result = {};
 
-		Object.keys(template).forEach(key => {
+		for (const key in template) {
 			const value = resolveTemplate(template[key], ...stack);
 
-			if (!isEmpty(value)) {
+			if (!isEmpty(value, true)) {
 				result[key] = value;
 			}
-		});
-
-		return Object.keys(result).length > 0 ? result : null;
+		}
+	} else if (typeof template === 'string') {
+		result = resolveExpression(template, ...stack);
 	}
+
+	return !isEmpty(result, true) ? result : null;
 }

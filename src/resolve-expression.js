@@ -4,7 +4,7 @@ import {
 	objectDefinition,
 	arrayDefinition,
 	elementDefinition
-} from './variables';
+} from './patterns';
 
 import { delayOperation } from './delay-operation';
 import { resolveOperation } from './resolve-operation';
@@ -62,7 +62,7 @@ export function resolveExpression (expression, ...stack) {
 	const result = valueStack[0];
 
 	if (result !== null && typeof result === 'object' && !Object.keys(result).length) {
-		return;
+		return null;
 	}
 
 	return result;

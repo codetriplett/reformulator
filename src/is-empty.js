@@ -1,6 +1,6 @@
-export function isEmpty (value, isStrict) {
+export function isEmpty (value, strict) {
 	if (value === undefined || value === null || typeof value === 'number' && isNaN(value)
-			|| isStrict && (value === '' || (typeof value === 'object' && !Object.keys(value).length))) {
+			|| strict && (value === '' || (typeof value === 'object' && !Object.keys(value).length))) {
 		return true;
 	}
 
