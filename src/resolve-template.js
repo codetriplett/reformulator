@@ -3,6 +3,25 @@ import { isEmpty } from './is-empty';
 import { resolveExpression } from './resolve-expression';
 
 export function resolveTemplate (template, ...stack) {
+	if (Array.isArray(stack[0])) {
+		let result = [];
+		const remainingStack = stack.slice(1);
+
+		stack[0].forEach(local => {
+			const value = resolveTemplate(template, local, ...remainingStack);
+
+			if (!isEmpty(value, true)) {
+				result.push(value);
+			}
+		});
+
+		if (Array.isArray(template)) {
+			result = result.reduce((total, value) => total.concat(value), []);
+		}
+
+		return result.length > 0 ? result : null;
+	}
+
 	let result;
 
 	if (!template) {

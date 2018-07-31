@@ -11,7 +11,7 @@ module.exports = function (grunt) {
 						},
 						{
 							match: /(^|[\r\n]*)export default /g,
-							replacement: '\nwindow.reformulator = '
+							replacement: '\nwindow.reform = '
 						},
 						{
 							match: /(^|[\r\n]*)export (?!default)/g,

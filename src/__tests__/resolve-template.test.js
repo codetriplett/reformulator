@@ -12,6 +12,20 @@ describe('resolve-template', () => {
 		const actual = resolveTemplate({ key: '1 + @' }, 2);
 		expect(actual).toEqual({ key: 3 });
 	});
+
+	it('should repeat string template if data is an array', () => {
+		const actual = resolveTemplate('@ + 1', ['a', 'b']);
+		expect(actual).toEqual(['a1', 'b1']);
+	});
+
+	it('should repeat object template if data is an array', () => {
+		const actual = resolveTemplate({ key: '@ + 1' }, ['a', 'b']);
+
+		expect(actual).toEqual([
+			{ key: 'a1' },
+			{ key: 'b1' }
+		]);
+	});
 	
 	it('should return null if no properties from object exist', () => {
 		const actual = resolveTemplate({ key: '1 + @' });
@@ -29,6 +43,17 @@ describe('resolve-template', () => {
 	});
 
 	describe('arrays', () => {
+		it('should repeat array template if data is an array', () => {
+			const actual = resolveTemplate([
+				'@', [
+					'@ + 1',
+					'@ + 2',
+				]
+			], ['a', 'b']);
+
+			expect(actual).toEqual(['a1', 'a2', 'b1', 'b2']);
+		});
+
 		it('should return array of values that use different local data', () => {
 			const actual = resolveTemplate([
 				{ key: '@' },

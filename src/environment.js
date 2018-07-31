@@ -1,1 +1,1 @@
-export const isClientSide = () => window && document && typeof document.querySelector === 'function';
+export const isClientSide = () => typeof window !== 'undefined' && window.document && typeof window.document.querySelector === 'function';

@@ -25,7 +25,7 @@ export function resolveExpression (expression, ...stack) {
 	const valueStack = [];
 	const operatorStack = [];
 	let nextOperation;
-	
+
 	let remainingExpression = `(${expression.trim()}`
 		.replace(negationRegex, match => `${match[0]}(!`)
 		.replace(existenceRegex, match => `${match[0]}(?`)

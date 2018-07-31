@@ -12,7 +12,7 @@ const defaultAttributes = {
 	a: { href: 'javascript:void(0);' }
 };
 
-export function ElementStructure (type, options = {}, element) {
+export function ElementStructure (type, options = {}) {
 	const attributesAndVariables = mergeObjects(defaultAttributes[type] || {}, options.attributes || {});
 	let classNames = options.classNames || [];
 	const attributes = {};
@@ -43,7 +43,7 @@ export function ElementStructure (type, options = {}, element) {
 	this.variables = variables;
 
 	if (isClientSide()) {
-		this.element = element || document.createElement(type);
+		this.element = document.createElement(type);
 	}
 }
 

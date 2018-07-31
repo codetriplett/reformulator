@@ -3,7 +3,7 @@ import { resolveElement } from '../resolve-element';
 describe('resolve-element', () => {
 	it('should parse element string', () => {
 		const actual = resolveElement('<div [a] @, @ + 1, key: @, flag: true>', { a: 'a' });
-		
+
 		expect(actual).toEqual({
 			type: 'div',
 			classNames: ['a', 'a1'],
@@ -26,7 +26,7 @@ describe('resolve-element', () => {
 	});
 
 	it('should return array if scope is array', () => {
-		const actual = resolveElement('<div [x] @>', { x: ['a', 'b'] });
+		const actual = resolveElement('<div [@] @>', ['a', 'b']);
 
 		expect(actual).toMatchObject([{
 			type: 'div',
