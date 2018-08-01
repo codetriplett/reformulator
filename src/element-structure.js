@@ -6,13 +6,14 @@ import { mergeObjects } from './merge-objects';
 
 const literalTypeRegex = /^(string|number)$/;
 const singletonRegex = /^(wbr|track|source|param|meta|link|keygen|input|img|hr|embed|command|col|br|base|area|!doctype)$/;
+const inputRegex = /^(input)$/;
 
 const defaultAttributes = {
 	img: { alt: '' },
 	a: { href: 'javascript:void(0);' }
 };
 
-export function ElementStructure (type, options = {}) {
+export function ElementStructure (liveTemplate = {}, type, options = {}) {
 	const attributesAndVariables = mergeObjects(defaultAttributes[type] || {}, options.attributes || {});
 	let classNames = options.classNames || [];
 	const attributes = {};
@@ -43,7 +44,36 @@ export function ElementStructure (type, options = {}) {
 	this.variables = variables;
 
 	if (isClientSide()) {
-		this.element = document.createElement(type);
+		let element = liveTemplate.element || document.createElement(type);
+
+		if (element !== liveTemplate.element || !liveTemplate.initialized) {
+			for (const key in events) {
+				const variable = events[key];
+
+				switch (key) {
+					case 'onclick':
+						element.addEventListener('click', () => liveTemplate.update(variable));
+						break;
+					case 'onkeydown':
+						element.addEventListener('keydown', event => liveTemplate.update(variable, event.target.value));
+						break;
+					case 'onkeyup':
+						element.addEventListener('keyup', event => liveTemplate.update(variable, event.target.value));
+						break;
+					case 'onkeypress':
+						element.addEventListener('keypress', event => liveTemplate.update(variable, event.target.value));
+						break;
+				}
+			}
+
+			liveTemplate.initialized = true;
+		}
+		
+		if (element === liveTemplate.element) {
+			liveTemplate.element = undefined;
+		}
+		
+		this.element = element;
 	}
 }
 
@@ -77,22 +107,34 @@ ElementStructure.prototype.append = function (newContent) {
 	return this;
 };
 
-ElementStructure.prototype.render = function (shadow) {
+ElementStructure.prototype.render = function () {
 	const type = this.type;
 	const classNames = this.classNames;
 	const attributes = this.attributes;
+	const scope = this.scope;
 	const element = this.element;
 	let content = this.content;
 	let result = element || `<${this.type}`;
 
-	if (!shadow && classNames.length > 0 || shadow && !isEqual(classNames, shadow.classNames)) {
-		const classString = classNames.sort().join(' ');
-
-		if (element) {
-			result.className = classString;
-		} else if (classString) {
-			result += ` class="${classString}"`;
+	if (isEmpty(content, true)) {
+		if (inputRegex.test(type)) {
+			attributes.value = scope;
+		} else {
+			this.append(scope);
+			content = this.content;
 		}
+	}
+	
+	const classString = classNames.sort().join(' ');
+
+	if (element) {
+		if (classString) {
+			result.className = classString;
+		} else {
+			result.removeAttribute('class');
+		}
+	} else if (classString) {
+		result += ` class="${classString}"`;
 	}
 	
 	let attributeString = '';
@@ -101,20 +143,18 @@ ElementStructure.prototype.render = function (shadow) {
 	Object.keys(attributes).sort().forEach(key => {
 		const value = attributes[key];
 
-		if (!shadow || !isEqual(value, shadow.attributes[key])) {
-			if (!element) {
-				const keyString = ` ${key}`;
+		if (!element) {
+			const keyString = ` ${key}`;
 
-				if (literalTypeRegex.test(typeof value)) {
-					attributeString += `${keyString}="${value}"`;
-				} else if (value === true) {
-					flagString += keyString;
-				}
-			} else if (value) {
-				result.setAttribute(key, value);
-			} else {
-				result.removeAttribute(key);
+			if (literalTypeRegex.test(typeof value)) {
+				attributeString += `${keyString}="${value}"`;
+			} else if (value === true) {
+				flagString += keyString;
 			}
+		} else if (value) {
+			result.setAttribute(key, value);
+		} else {
+			result.removeAttribute(key);
 		}
 	});
 
@@ -123,12 +163,8 @@ ElementStructure.prototype.render = function (shadow) {
 	}
 
 	if (!singletonRegex.test(type)) {
-		if (isEmpty(content, true)) {
-			this.append(this.scope);
-			content = this.content;
-		}
-
 		if (element) {
+			result.innerHTML = '';
 			content.forEach(child => result.appendChild(child));
 		} else {
 			result += `${content.join('')}</${type}>`;

@@ -2,24 +2,26 @@ import { resolveTemplate } from '../resolve-template';
 
 jest.mock('../environment', () => ({ isClientSide: () => false }));
 
+const liveTemplate = { update: jest.fn() };
+
 describe('resolve-template', () => {
 	it('should resolve strings', () => {
-		const actual = resolveTemplate('1 + @', 2);
+		const actual = resolveTemplate(liveTemplate, '1 + @', 2);
 		expect(actual).toBe(3);
 	});
 	
 	it('should resolve objects', () => {
-		const actual = resolveTemplate({ key: '1 + @' }, 2);
+		const actual = resolveTemplate(liveTemplate, { key: '1 + @' }, 2);
 		expect(actual).toEqual({ key: 3 });
 	});
 
 	it('should repeat string template if data is an array', () => {
-		const actual = resolveTemplate('@ + 1', ['a', 'b']);
+		const actual = resolveTemplate(liveTemplate, '@ + 1', ['a', 'b']);
 		expect(actual).toEqual(['a1', 'b1']);
 	});
 
 	it('should repeat object template if data is an array', () => {
-		const actual = resolveTemplate({ key: '@ + 1' }, ['a', 'b']);
+		const actual = resolveTemplate(liveTemplate, { key: '@ + 1' }, ['a', 'b']);
 
 		expect(actual).toEqual([
 			{ key: 'a1' },
@@ -28,7 +30,7 @@ describe('resolve-template', () => {
 	});
 	
 	it('should return null if no properties from object exist', () => {
-		const actual = resolveTemplate({ key: '1 + @' });
+		const actual = resolveTemplate(liveTemplate, { key: '1 + @' });
 		expect(actual).toBeNull();
 	});
 	
@@ -38,13 +40,13 @@ describe('resolve-template', () => {
 	});
 	
 	it('should return null when template type is invalid', () => {
-		const actual = resolveTemplate(1);
+		const actual = resolveTemplate(liveTemplate, 1);
 		expect(actual).toBeNull();
 	});
 
 	describe('arrays', () => {
 		it('should repeat array template if data is an array', () => {
-			const actual = resolveTemplate([
+			const actual = resolveTemplate(liveTemplate, [
 				'@', [
 					'@ + 1',
 					'@ + 2',
@@ -55,7 +57,7 @@ describe('resolve-template', () => {
 		});
 
 		it('should return array of values that use different local data', () => {
-			const actual = resolveTemplate([
+			const actual = resolveTemplate(liveTemplate, [
 				{ key: '@' },
 				'1 + key',
 				{ key: '@' },
@@ -67,7 +69,7 @@ describe('resolve-template', () => {
 		});
 
 		it('should skip string template if object is null', () => {
-			const actual = resolveTemplate([
+			const actual = resolveTemplate(liveTemplate, [
 				{ key: '@' },
 				'1 + key'
 			]);
@@ -76,7 +78,7 @@ describe('resolve-template', () => {
 		});
 		
 		it('should resolve sub template using a custom scope', () => {
-			const actual = resolveTemplate([
+			const actual = resolveTemplate(liveTemplate, [
 				'key', [
 					'1 + @',
 					'2 + @'
@@ -87,7 +89,7 @@ describe('resolve-template', () => {
 		});
 
 		it('should skip sub template if the value before it is empty', () => {
-			const actual = resolveTemplate([
+			const actual = resolveTemplate(liveTemplate, [
 				'b', [
 					'"b"'
 				]
@@ -97,7 +99,7 @@ describe('resolve-template', () => {
 		});
 		
 		it('should allow empty elements if the scope was also empty', () => {
-			const actual = resolveTemplate(['<div []>']);
+			const actual = resolveTemplate(liveTemplate, ['<div []>']);
 
 			expect(actual).toMatchObject([
 				{
@@ -108,7 +110,7 @@ describe('resolve-template', () => {
 		});
 		
 		it('should scope and wrap each sub template of an element properly', () => {
-			const actual = resolveTemplate([
+			const actual = resolveTemplate(liveTemplate, [
 				'<p [x] @>', [
 					'@'
 				]
@@ -131,7 +133,7 @@ describe('resolve-template', () => {
 		});
 
 		it('should skip element if result of sub template is empty', () => {
-			const actual = resolveTemplate([
+			const actual = resolveTemplate(liveTemplate, [
 				'<div>', [
 					'a'
 				]
@@ -141,7 +143,7 @@ describe('resolve-template', () => {
 		});
 		
 		it('should still render container if sub template is empty', () => {
-			const actual = resolveTemplate([
+			const actual = resolveTemplate(liveTemplate, [
 				'<div>', []
 			]);
 
@@ -153,7 +155,7 @@ describe('resolve-template', () => {
 		});
 
 		it('should work with something more complicated', () => {
-			const actual = resolveTemplate([
+			const actual = resolveTemplate(liveTemplate, [
 				'<ul>', [
 					'<li [links]>', [
 						'<a [url & image & @] href: url> | @', [

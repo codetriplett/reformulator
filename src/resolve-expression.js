@@ -21,7 +21,7 @@ const negativeSignRegex = new RegExp(`[${operatorDefinition}] *-(?=${variableDef
 const negationRegex = new RegExp(`[${operatorDefinition}] *!(?=${operandDefinition})`);
 const existenceRegex = new RegExp(`[${operatorDefinition}] *\\?(?=${operandDefinition})`);
 
-export function resolveExpression (expression, ...stack) {
+export function resolveExpression (liveTemplate, expression, ...stack) {
 	const valueStack = [];
 	const operatorStack = [];
 	let nextOperation;
@@ -43,7 +43,7 @@ export function resolveExpression (expression, ...stack) {
 
 		const currentOperator = nextOperation[0];
 		const nextOperator = remainingExpression[0];
-		const value = resolveValue(nextOperation.slice(1), ...stack);
+		const value = resolveValue(liveTemplate, nextOperation.slice(1), ...stack);
 
 		if (delayOperation(currentOperator, nextOperator)) {
 			operatorStack.splice(0, 0, currentOperator);

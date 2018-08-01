@@ -21,7 +21,7 @@ const escapedCharacterRegexMap = {
 	'"': /\\"/g
 };
 
-export function resolveValue (value, ...stack) {
+export function resolveValue (liveTemplate, value, ...stack) {
 	let trimmedValue = value.trim();
 
 	if (trimmedValue === '') {
@@ -37,18 +37,20 @@ export function resolveValue (value, ...stack) {
 	} else if (booleanRegex.test(trimmedValue)) {
 		return trimmedValue === 'true';
 	} else if (objectRegex.test(trimmedValue) || arrayRegex.test(trimmedValue)) {
-		return resolveStructure(trimmedValue, ...stack);
+		return resolveStructure(liveTemplate, trimmedValue, ...stack);
 	} else if (elementRegex.test(trimmedValue)) {
-		return resolveElement(trimmedValue, ...stack);
+		return resolveElement(liveTemplate, trimmedValue, ...stack);
 	} else if (!variableRegex.test(trimmedValue) && trimmedValue !== '@') {
 		return null;
 	}
 
+	const state = liveTemplate.state;
+	const stateStack = [state, ...stack];
 	let foundValue;
 
-	for (const variables of stack) {
+	for (const variables of stateStack) {
 		if (trimmedValue === '@') {
-			foundValue = variables;
+			foundValue = variables !== state ? variables : undefined;
 		} else if (variables && variables !== null && typeof variables === 'object') {
 			foundValue = variables[trimmedValue];
 		}

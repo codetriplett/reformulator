@@ -3,6 +3,52 @@ import { ElementStructure } from '../element-structure';
 
 jest.mock('../environment', () => ({ isClientSide: jest.fn() }));
 
+const liveTemplate = { update: jest.fn() };
+
+function mockEvent (element, type, options = {}) {
+	let event;
+
+	switch (type) {
+		case 'click':
+			element.click();
+			return;
+		case 'keydown':
+		case 'keyup':
+		case 'keypress': {
+			const {
+				bubbles = true,
+				cancelable = true,
+				view = window,
+				ctrlKey = false,
+				altKey = false,
+				shiftKey = false,
+				metaKey = false,
+				keyCode = 32,
+				charCode = 0
+			} = options;
+		
+			event = document.createEvent('KeyboardEvent');
+		
+			event.initKeyboardEvent(
+				type,
+				bubbles,
+				cancelable,
+				view,
+				ctrlKey,
+				altKey,
+				shiftKey,
+				metaKey,
+				keyCode,
+				charCode
+			);
+
+			break;
+		}
+	}
+	
+	element.dispatchEvent(event);
+}
+
 function testElement (element, tagName = '', attributes = {}, children = []) {
 	const elementTagName = element.tagName;
 	const elementAttributes = element.attributes;
@@ -34,17 +80,17 @@ function testElement (element, tagName = '', attributes = {}, children = []) {
 
 describe('element-structure', () => {
 	it('should add default alt text for img elements if none is provided', () => {
-		const actual = new ElementStructure('img');
+		const actual = new ElementStructure(liveTemplate, 'img');
 		expect(actual.attributes.alt).toBe('');
 	});
 	
 	it('should add default href for a elements if none is provided', () => {
-		const actual = new ElementStructure('a');
+		const actual = new ElementStructure(liveTemplate, 'a');
 		expect(actual.attributes.href).toBe('javascript:void(0);');
 	});
 		
 	it('should sort classes and attributes alphabetically and by type when rendering', () => {
-		const elementStructure = new ElementStructure('img', {
+		const elementStructure = new ElementStructure(liveTemplate, 'img', {
 			classNames: ['a c', 'b'],
 			attributes: {
 				b: 'b',
@@ -64,7 +110,7 @@ describe('element-structure', () => {
 		beforeEach(() => {
 			isClientSide.mockReturnValue(false);
 
-			elementStructure = new ElementStructure('div', {
+			elementStructure = new ElementStructure(liveTemplate, 'div', {
 				scope: 1,
 				classNames: ['two', 'one'],
 				attributes: {
@@ -103,7 +149,7 @@ describe('element-structure', () => {
 		});
 
 		it('should append another element structure', () => {
-			const child = new ElementStructure('div', {
+			const child = new ElementStructure(liveTemplate, 'div', {
 				attributes: { onclick: 'visible' }
 			});
 
@@ -112,16 +158,16 @@ describe('element-structure', () => {
 		});
 
 		it('should not append to a singleton', () => {
-			elementStructure = new ElementStructure('img');
+			elementStructure = new ElementStructure(liveTemplate, 'img');
 
-			const child = new ElementStructure('span');
+			const child = new ElementStructure(liveTemplate, 'span');
 			elementStructure.append(child);
 
 			expect(elementStructure.content).toEqual([]);
 		});
 
 		it('should render a parent', () => {
-			const child = new ElementStructure('span', {
+			const child = new ElementStructure(liveTemplate, 'span', {
 				attributes: { onclick: 'visible' }
 			});
 			
@@ -131,6 +177,12 @@ describe('element-structure', () => {
 			expect(Object.keys(elementStructure.variables).sort()).toEqual(['expanded', 'visible']);
 			expect(actual).toBe('<div class="one two" key="value"><span></span></div>');
 		});
+		
+		it('should set scope as value attribute for inputs', () => {
+			elementStructure = new ElementStructure(liveTemplate, 'input', { scope: 'asdf' });
+			const actual = elementStructure.render();
+			expect(actual).toBe('<input value="asdf">');
+		});
 	});
 	
 	describe('client side', () => {
@@ -138,8 +190,9 @@ describe('element-structure', () => {
 
 		beforeEach(() => {
 			isClientSide.mockReturnValue(true);
+			liveTemplate.update.mockClear();
 
-			elementStructure = new ElementStructure('div', {
+			elementStructure = new ElementStructure(liveTemplate, 'div', {
 				scope: 1,
 				classNames: ['two', 'one'],
 				attributes: {
@@ -178,7 +231,7 @@ describe('element-structure', () => {
 		});
 
 		it('should append another element structure', () => {
-			const child = new ElementStructure('div', {
+			const child = new ElementStructure(liveTemplate, 'div', {
 				attributes: { onclick: 'visible' }
 			});
 
@@ -189,16 +242,16 @@ describe('element-structure', () => {
 		});
 
 		it('should not append to a singleton', () => {
-			elementStructure = new ElementStructure('img');
+			elementStructure = new ElementStructure(liveTemplate, 'img');
 
-			const child = new ElementStructure('span');
+			const child = new ElementStructure(liveTemplate, 'span');
 			elementStructure.append(child);
 
 			expect(elementStructure.content).toHaveLength(0);
 		});
 
 		it('should render a parent', () => {
-			const child = new ElementStructure('span', {
+			const child = new ElementStructure(liveTemplate, 'span', {
 				attributes: { onclick: 'visible' }
 			});
 			
@@ -212,6 +265,74 @@ describe('element-structure', () => {
 			}, [
 				['span', {}, '']
 			]);
+		});
+		
+		it('should set scope as value attribute for inputs', () => {
+			elementStructure = new ElementStructure(liveTemplate, 'input', { scope: 'asdf' });
+			const actual = elementStructure.render();
+			testElement(actual, 'input', { value: 'asdf' });
+		});
+
+		it('should attach to input element if one is provided', () => {
+			const element = document.createElement('div');
+			liveTemplate.element = element;
+
+			const actual = new ElementStructure(liveTemplate, 'div', {});
+			expect(actual.element).toBe(element);
+		});
+	});
+
+	describe('events', () => {
+		let elementStructure;
+
+		beforeEach(() => {
+			isClientSide.mockReturnValue(true);
+			liveTemplate.update.mockClear();
+			
+			elementStructure = new ElementStructure(liveTemplate, 'input', {
+				scope: 'asdf',
+				attributes: {
+					onclick: 'clickValue',
+					onkeydown: 'keydownValue',
+					onkeyup: 'keyupValue',
+					onkeypress: 'keypressValue'
+				}
+			});
+
+			elementStructure.append('asdf');
+		});
+
+		it('should trigger updater on click', () => {
+			const actual = elementStructure.render();
+			actual.click();
+			expect(liveTemplate.update).toHaveBeenCalledWith('clickValue');
+		});
+
+		it('should trigger updater on keydown', () => {
+			const actual = elementStructure.render();
+			mockEvent(actual, 'keydown');
+			expect(liveTemplate.update).toHaveBeenCalledWith('keydownValue', 'asdf');
+		});
+
+		it('should trigger updater on keyup', () => {
+			const actual = elementStructure.render();
+			mockEvent(actual, 'keyup');
+			expect(liveTemplate.update).toHaveBeenCalledWith('keyupValue', 'asdf');
+		});
+
+		it('should trigger updater on keypress', () => {
+			const actual = elementStructure.render();
+			mockEvent(actual, 'keypress');
+			expect(liveTemplate.update).toHaveBeenCalledWith('keypressValue', 'asdf');
+		});
+
+		it('should not fail when liveTemplate is not provided', () => {
+			elementStructure = new ElementStructure(undefined, 'div', {
+				attributes: { onclick: 'clickValue' }
+			});
+			
+			const actual = elementStructure.render();
+			expect(actual).toBeTruthy();
 		});
 	});
 });

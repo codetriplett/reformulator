@@ -12,7 +12,7 @@ import { resolveStructure } from './resolve-structure';
 const typeRegex = new RegExp(`^${typeDefinition}$`);
 const scopeRegex = new RegExp(`^${arrayDefinition}`);
 
-export function resolveElement (string, ...stack) {
+export function resolveElement (liveTemplate, string, ...stack) {
 	const bracketIndex = string.indexOf('[');
 	const type = string.slice(1, bracketIndex).trim();
 
@@ -21,13 +21,13 @@ export function resolveElement (string, ...stack) {
 	}
 
 	if (bracketIndex === -1) {
-		return new ElementStructure(type, { scope: stack[0] });
+		return new ElementStructure(liveTemplate, type, { scope: stack[0] });
 	}
 
 	const scopeExpression = string.slice(bracketIndex).match(scopeRegex)[0].slice(1, -1).trim();
 	let remainingString = `${string.slice(bracketIndex + scopeExpression.length + 2, -1)}`;
 
-	const scope = resolveExpression(scopeExpression || '@', ...stack);
+	const scope = resolveExpression(liveTemplate, scopeExpression || '@', ...stack);
 
 	if (scopeExpression && isEmpty(scope)) {
 		return null;
@@ -35,13 +35,13 @@ export function resolveElement (string, ...stack) {
 		const reducedString = `${string.slice(0, bracketIndex)}[]${remainingString}>`;
 
 		const result = scope
-			.map(item => resolveElement(reducedString, item, ...stack))
+			.map(item => resolveElement(liveTemplate, reducedString, item, ...stack))
 			.filter(item => !isEmpty(item));
 
 		return result.length > 0 ? result : null;
 	}
 
-	const attributes = resolveStructure(`<${remainingString}>`, scope, ...stack);
+	const attributes = resolveStructure(liveTemplate, `<${remainingString}>`, scope, ...stack);
 
 	if (!attributes) {
 		return null;
@@ -53,5 +53,5 @@ export function resolveElement (string, ...stack) {
 
 	delete attributes[''];
 
-	return new ElementStructure(type, { scope, classNames, attributes });
+	return new ElementStructure(liveTemplate, type, { scope, classNames, attributes });
 }

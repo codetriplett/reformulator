@@ -1,30 +1,11 @@
 import { isEmpty } from './is-empty';
 import { isEqual } from './is-equal';
 import { mergeObjects } from './merge-objects';
+import { typeOf } from './type-of';
 
 export function resolveOperation (firstValue, operator, secondValue) {
-	let firstValueType = 'empty';
-	let secondValueType = 'empty';
-
-	if (!isEmpty(firstValue)) {
-		firstValueType = Array.isArray(firstValue) ? 'array' : typeof firstValue;
-	}
-
-	if (!isEmpty(secondValue)) {
-		secondValueType = Array.isArray(secondValue) ? 'array' : typeof secondValue;
-	}
-
-	const specificOperator = `${operator}:${firstValueType}:${secondValueType}`;
-
-	if (firstValueType !== 'empty') {
-		firstValueType = typeof firstValue === 'object' ? 'structure' : 'literal';
-	}
-
-	if (secondValueType !== 'empty') {
-		secondValueType = typeof secondValue === 'object' ? 'structure' : 'literal';
-	}
-
-	const generalOperator = `${operator}:${firstValueType}:${secondValueType}`;
+	const generalOperator = `${operator}:${typeOf(firstValue, true)}:${typeOf(secondValue, true)}`;
+	const specificOperator = `${operator}:${typeOf(firstValue)}:${typeOf(secondValue)}`;
 	let result;
 
 	switch (operator) {

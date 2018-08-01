@@ -57,20 +57,22 @@ module.exports = function (grunt) {
 			},
 			dist: {
 				src: [
-					'temp/patterns.js',
-					'temp/environment.js',
 					'temp/delay-operation.js',
 					'temp/element-structure.js',
+					'temp/environment.js',
 					'temp/is-empty.js',
 					'temp/is-equal.js',
+					'temp/live-template.js',
 					'temp/merge-objects.js',
+					'temp/patterns.js',
+					'temp/reformulator.js',
 					'temp/resolve-element.js',
 					'temp/resolve-expression.js',
 					'temp/resolve-operation.js',
 					'temp/resolve-structure.js',
 					'temp/resolve-template.js',
 					'temp/resolve-value.js',
-					'temp/reformulator.js'
+					'temp/type-of.js'
 				],
 				dest: 'temp/reformulator.js',
 			}
@@ -83,6 +85,7 @@ module.exports = function (grunt) {
 					'lib/environment.js': 'src/environment.js',
 					'lib/is-empty.js': 'src/is-empty.js',
 					'lib/is-equal.js': 'src/is-equal.js',
+					'lib/live-template.js': 'src/live-template.js',
 					'lib/merge-objects.js': 'src/merge-objects.js',
 					'lib/patterns.js': 'src/patterns.js',
 					'lib/reformulator.js': 'src/reformulator.js',
@@ -92,6 +95,7 @@ module.exports = function (grunt) {
 					'lib/resolve-structure.js': 'src/resolve-structure.js',
 					'lib/resolve-template.js': 'src/resolve-template.js',
 					'lib/resolve-value.js': 'src/resolve-value.js',
+					'lib/type-of.js': 'src/type-of.js',
 					'temp/reformulator.js': 'temp/reformulator.js'
 				}
 			}
