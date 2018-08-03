@@ -80,17 +80,17 @@ function testElement (element, tagName = '', attributes = {}, children = []) {
 
 describe('element-structure', () => {
 	it('should add default alt text for img elements if none is provided', () => {
-		const actual = new ElementStructure(liveTemplate, 'img');
+		const actual = new ElementStructure('img');
 		expect(actual.attributes.alt).toBe('');
 	});
 	
 	it('should add default href for a elements if none is provided', () => {
-		const actual = new ElementStructure(liveTemplate, 'a');
+		const actual = new ElementStructure('a');
 		expect(actual.attributes.href).toBe('javascript:void(0);');
 	});
 		
 	it('should sort classes and attributes alphabetically and by type when rendering', () => {
-		const elementStructure = new ElementStructure(liveTemplate, 'img', {
+		const elementStructure = new ElementStructure('img', {
 			classNames: ['a c', 'b'],
 			attributes: {
 				b: 'b',
@@ -100,7 +100,7 @@ describe('element-structure', () => {
 			}
 		});
 
-		const actual = elementStructure.render();
+		const actual = elementStructure.render(liveTemplate);
 		expect(actual).toEqual('<img class="a b c" a="a" alt="" b="b" c d>');
 	});
 
@@ -110,7 +110,7 @@ describe('element-structure', () => {
 		beforeEach(() => {
 			isClientSide.mockReturnValue(false);
 
-			elementStructure = new ElementStructure(liveTemplate, 'div', {
+			elementStructure = new ElementStructure('div', {
 				scope: 1,
 				classNames: ['two', 'one'],
 				attributes: {
@@ -134,7 +134,7 @@ describe('element-structure', () => {
 		});
 
 		it('should render a child', () => {
-			const actual = elementStructure.render();
+			const actual = elementStructure.render(liveTemplate);
 			expect(actual).toBe('<div class="one two" key="value">1</div>');
 		});
 
@@ -149,38 +149,38 @@ describe('element-structure', () => {
 		});
 
 		it('should append another element structure', () => {
-			const child = new ElementStructure(liveTemplate, 'div', {
+			const child = new ElementStructure('div', {
 				attributes: { onclick: 'visible' }
 			});
 
 			elementStructure.append(child);
-			expect(elementStructure.content).toEqual(['<div></div>']);
+			expect(elementStructure.content).toEqual([child]);
 		});
 
 		it('should not append to a singleton', () => {
-			elementStructure = new ElementStructure(liveTemplate, 'img');
+			elementStructure = new ElementStructure('img');
 
-			const child = new ElementStructure(liveTemplate, 'span');
+			const child = new ElementStructure('span');
 			elementStructure.append(child);
 
 			expect(elementStructure.content).toEqual([]);
 		});
 
 		it('should render a parent', () => {
-			const child = new ElementStructure(liveTemplate, 'span', {
+			const child = new ElementStructure('span', {
 				attributes: { onclick: 'visible' }
 			});
 			
 			elementStructure.append(child);
-			const actual = elementStructure.render();
+			const actual = elementStructure.render(liveTemplate);
 
 			expect(Object.keys(elementStructure.variables).sort()).toEqual(['expanded', 'visible']);
 			expect(actual).toBe('<div class="one two" key="value"><span></span></div>');
 		});
 		
 		it('should set scope as value attribute for inputs', () => {
-			elementStructure = new ElementStructure(liveTemplate, 'input', { scope: 'asdf' });
-			const actual = elementStructure.render();
+			elementStructure = new ElementStructure('input', { scope: 'asdf' });
+			const actual = elementStructure.render(liveTemplate);
 			expect(actual).toBe('<input value="asdf">');
 		});
 	});
@@ -192,7 +192,7 @@ describe('element-structure', () => {
 			isClientSide.mockReturnValue(true);
 			liveTemplate.update.mockClear();
 
-			elementStructure = new ElementStructure(liveTemplate, 'div', {
+			elementStructure = new ElementStructure('div', {
 				scope: 1,
 				classNames: ['two', 'one'],
 				attributes: {
@@ -202,12 +202,8 @@ describe('element-structure', () => {
 			});
 		});
 
-		it('should initialize element', () => {
-			expect(elementStructure.element).toEqual(expect.any(Element));
-		});
-
 		it('should render a child', () => {
-			const actual = elementStructure.render();
+			const actual = elementStructure.render(liveTemplate);
 
 			testElement(actual, 'div', {
 				class: 'one two',
@@ -217,46 +213,47 @@ describe('element-structure', () => {
 
 		it('should append a string', () => {
 			elementStructure.append('asdf');
-
-			expect(elementStructure.content).toHaveLength(1);
-			testElement(elementStructure.content[0], 'asdf');
+			expect(elementStructure.content).toEqual(['asdf']);
 		});
 
 		it('should append an array', () => {
 			elementStructure.append(['one', 'two']);
-			
-			expect(elementStructure.content).toHaveLength(2);
-			testElement(elementStructure.content[0], 'one');
-			testElement(elementStructure.content[1], 'two');
+			expect(elementStructure.content).toEqual(['one', 'two']);
 		});
 
 		it('should append another element structure', () => {
-			const child = new ElementStructure(liveTemplate, 'div', {
+			const child = new ElementStructure('div', {
 				attributes: { onclick: 'visible' }
 			});
 
 			elementStructure.append(child);
 
-			expect(elementStructure.content).toHaveLength(1);
-			testElement(elementStructure.content[0], 'div');
+			expect(elementStructure.content).toMatchObject([
+				{
+					type: 'div',
+					classNames: [],
+					attributes: {},
+					events: { onclick: 'visible' }
+				}
+			]);
 		});
 
 		it('should not append to a singleton', () => {
-			elementStructure = new ElementStructure(liveTemplate, 'img');
+			elementStructure = new ElementStructure('img');
 
-			const child = new ElementStructure(liveTemplate, 'span');
+			const child = new ElementStructure('span');
 			elementStructure.append(child);
 
 			expect(elementStructure.content).toHaveLength(0);
 		});
 
 		it('should render a parent', () => {
-			const child = new ElementStructure(liveTemplate, 'span', {
+			const child = new ElementStructure('span', {
 				attributes: { onclick: 'visible' }
 			});
 			
 			elementStructure.append(child);
-			const actual = elementStructure.render();
+			const actual = elementStructure.render(liveTemplate);
 
 			expect(Object.keys(elementStructure.variables).sort()).toEqual(['expanded', 'visible']);
 			testElement(actual, 'div', {
@@ -268,17 +265,17 @@ describe('element-structure', () => {
 		});
 		
 		it('should set scope as value attribute for inputs', () => {
-			elementStructure = new ElementStructure(liveTemplate, 'input', { scope: 'asdf' });
-			const actual = elementStructure.render();
+			elementStructure = new ElementStructure('input', { scope: 'asdf' });
+			const actual = elementStructure.render(liveTemplate);
 			testElement(actual, 'input', { value: 'asdf' });
 		});
 
 		it('should attach to input element if one is provided', () => {
 			const element = document.createElement('div');
-			liveTemplate.element = element;
+			const elementStructure = new ElementStructure('div', {});
+			const actual = elementStructure.render(liveTemplate, element);
 
-			const actual = new ElementStructure(liveTemplate, 'div', {});
-			expect(actual.element).toBe(element);
+			expect(actual).toBe(element);
 		});
 	});
 
@@ -289,7 +286,7 @@ describe('element-structure', () => {
 			isClientSide.mockReturnValue(true);
 			liveTemplate.update.mockClear();
 			
-			elementStructure = new ElementStructure(liveTemplate, 'input', {
+			elementStructure = new ElementStructure('input', {
 				scope: 'asdf',
 				attributes: {
 					onclick: 'clickValue',
@@ -303,25 +300,25 @@ describe('element-structure', () => {
 		});
 
 		it('should trigger updater on click', () => {
-			const actual = elementStructure.render();
+			const actual = elementStructure.render(liveTemplate);
 			actual.click();
 			expect(liveTemplate.update).toHaveBeenCalledWith('clickValue');
 		});
 
 		it('should trigger updater on keydown', () => {
-			const actual = elementStructure.render();
+			const actual = elementStructure.render(liveTemplate);
 			mockEvent(actual, 'keydown');
 			expect(liveTemplate.update).toHaveBeenCalledWith('keydownValue', 'asdf');
 		});
 
 		it('should trigger updater on keyup', () => {
-			const actual = elementStructure.render();
+			const actual = elementStructure.render(liveTemplate);
 			mockEvent(actual, 'keyup');
 			expect(liveTemplate.update).toHaveBeenCalledWith('keyupValue', 'asdf');
 		});
 
 		it('should trigger updater on keypress', () => {
-			const actual = elementStructure.render();
+			const actual = elementStructure.render(liveTemplate);
 			mockEvent(actual, 'keypress');
 			expect(liveTemplate.update).toHaveBeenCalledWith('keypressValue', 'asdf');
 		});
@@ -331,7 +328,7 @@ describe('element-structure', () => {
 				attributes: { onclick: 'clickValue' }
 			});
 			
-			const actual = elementStructure.render();
+			const actual = elementStructure.render(liveTemplate);
 			expect(actual).toBeTruthy();
 		});
 	});

@@ -11,7 +11,7 @@ module.exports = function (grunt) {
 						},
 						{
 							match: /(^|[\r\n]*)export default /g,
-							replacement: '\nwindow.reform = '
+							replacement: '\nvar reform = '
 						},
 						{
 							match: /(^|[\r\n]*)export (?!default)/g,
@@ -37,7 +37,7 @@ module.exports = function (grunt) {
 						},
 						{
 							match: /$/,
-							replacement: '\n})();'
+							replacement: '\nwindow.reform = reform;\n\nif (typeof define === \'function\' && define.amd) {\n\tdefine(\'reform\', function () { return reform; });\n}\n})();'
 						}
 					]
 				},

@@ -9,7 +9,7 @@ import { resolveExpression } from './resolve-expression';
 const expressionDefinition = `((${stringDefinition}|[^:,])*)`;
 const expressionRegex = new RegExp(`^ *${expressionDefinition} *$`);
 
-export function resolveStructure (liveTemplate, string, ...stack) {
+export function resolveStructure (string, state, ...stack) {
 	const keepObject = string[0] === '{' || string[0] === '<';
 	const keepArray = string[0] === '[' || string[0] === '<';
 	const keepBoth = keepObject && keepArray;
@@ -37,7 +37,7 @@ export function resolveStructure (liveTemplate, string, ...stack) {
 		}
 
 		if (!keepBoth || key.indexOf('on') !== 0) {
-			value = resolveExpression(liveTemplate, expression, ...stack) || isEvent || null;
+			value = resolveExpression(expression, state, ...stack) || isEvent || null;
 		}
 
 		if (isEmpty(value)) {

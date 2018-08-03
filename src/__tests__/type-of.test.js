@@ -4,7 +4,7 @@ import { typeOf } from '../type-of';
 describe('type-of', () => {
 	describe('specific', () => {
 		it('should detect elements', () => {
-			const actual = typeOf(new ElementStructure(undefined, 'div'));
+			const actual = typeOf(new ElementStructure('div'));
 			expect(actual).toBe('element');
 		});
 
@@ -41,7 +41,7 @@ describe('type-of', () => {
 	
 	describe('generic', () => {
 		it('should detect elements', () => {
-			const actual = typeOf(new ElementStructure(undefined, 'div'), true);
+			const actual = typeOf(new ElementStructure('div'), true);
 			expect(actual).toBe('structure');
 		});
 

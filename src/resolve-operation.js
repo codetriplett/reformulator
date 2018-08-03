@@ -102,7 +102,7 @@ export function resolveOperation (firstValue, operator, secondValue) {
 			break;
 		case '-:array:number':
 		case '-:string:number':
-			result = firstValue.slice(0, secondValue);
+			result = firstValue.slice(0, firstValue.length - secondValue);
 			break;
 		case '-:string:string':
 			result = firstValue.replace(new RegExp(secondValue, 'g'), '');

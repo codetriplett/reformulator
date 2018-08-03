@@ -410,13 +410,13 @@ describe('resolve-operation', () => {
 		});
 
 		it('should remove a number of values from the beginning of an array', () => {
-			const actual = resolveOperation(2, '-', [2, 3, 4, 5]);
-			expect(actual).toEqual([4, 5]);
+			const actual = resolveOperation(1, '-', [2, 3, 4, 5]);
+			expect(actual).toEqual([3, 4, 5]);
 		});
 
 		it('should remove a number of values from the end of an array', () => {
-			const actual = resolveOperation([2, 3, 4, 5], '-', 2);
-			expect(actual).toEqual([2, 3]);
+			const actual = resolveOperation([2, 3, 4, 5], '-', 1);
+			expect(actual).toEqual([2, 3, 4]);
 		});
 
 		it('should remove a number of values from the beginning of a string', () => {

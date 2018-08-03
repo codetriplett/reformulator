@@ -26,13 +26,13 @@ LiveTemplate.prototype.update = function (variable, value) {
 LiveTemplate.prototype.resolve = function () {
 	const template = this.template;
 	const stack = this.stack;
-	let result = resolveTemplate(this, template, ...stack);
+	let result = resolveTemplate(template, this.state, ...stack);
 	const startsWithElement = Array.isArray(result) && result[0] instanceof ElementStructure;
 
-	if (Array.isArray(template) || startsWithElement) {
+	if (Array.isArray(template) && Array.isArray(result) || startsWithElement) {
 		if (result.length > 1) {
 			const content = result;
-			result = new ElementStructure(this, 'div');
+			result = new ElementStructure('div');
 			result.append(content);
 		} else {
 			result = result[0];
@@ -43,7 +43,7 @@ LiveTemplate.prototype.resolve = function () {
 
 	if (resultIsElement) {
 		const variables = result.variables;
-		result = result.render();
+		result = result.render(this, this.element);
 
 		if (!isClientSide() && !isEmpty(variables, true)) {
 			const params = [template, ...stack].map(param => JSON.stringify(param));

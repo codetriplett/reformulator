@@ -21,7 +21,7 @@ const escapedCharacterRegexMap = {
 	'"': /\\"/g
 };
 
-export function resolveValue (liveTemplate, value, ...stack) {
+export function resolveValue (value, state, ...stack) {
 	let trimmedValue = value.trim();
 
 	if (trimmedValue === '') {
@@ -37,14 +37,13 @@ export function resolveValue (liveTemplate, value, ...stack) {
 	} else if (booleanRegex.test(trimmedValue)) {
 		return trimmedValue === 'true';
 	} else if (objectRegex.test(trimmedValue) || arrayRegex.test(trimmedValue)) {
-		return resolveStructure(liveTemplate, trimmedValue, ...stack);
+		return resolveStructure(trimmedValue, state, ...stack);
 	} else if (elementRegex.test(trimmedValue)) {
-		return resolveElement(liveTemplate, trimmedValue, ...stack);
+		return resolveElement(trimmedValue, state, ...stack);
 	} else if (!variableRegex.test(trimmedValue) && trimmedValue !== '@') {
 		return null;
 	}
 
-	const state = liveTemplate.state;
 	const stateStack = [state, ...stack];
 	let foundValue;
 

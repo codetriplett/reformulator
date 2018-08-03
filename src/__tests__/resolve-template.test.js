@@ -2,26 +2,24 @@ import { resolveTemplate } from '../resolve-template';
 
 jest.mock('../environment', () => ({ isClientSide: () => false }));
 
-const liveTemplate = { update: jest.fn() };
-
 describe('resolve-template', () => {
 	it('should resolve strings', () => {
-		const actual = resolveTemplate(liveTemplate, '1 + @', 2);
+		const actual = resolveTemplate('1 + @', {}, 2);
 		expect(actual).toBe(3);
 	});
 	
 	it('should resolve objects', () => {
-		const actual = resolveTemplate(liveTemplate, { key: '1 + @' }, 2);
+		const actual = resolveTemplate({ key: '1 + @' }, {}, 2);
 		expect(actual).toEqual({ key: 3 });
 	});
 
 	it('should repeat string template if data is an array', () => {
-		const actual = resolveTemplate(liveTemplate, '@ + 1', ['a', 'b']);
+		const actual = resolveTemplate('@ + 1', {}, ['a', 'b']);
 		expect(actual).toEqual(['a1', 'b1']);
 	});
 
 	it('should repeat object template if data is an array', () => {
-		const actual = resolveTemplate(liveTemplate, { key: '@ + 1' }, ['a', 'b']);
+		const actual = resolveTemplate({ key: '@ + 1' }, {}, ['a', 'b']);
 
 		expect(actual).toEqual([
 			{ key: 'a1' },
@@ -30,7 +28,7 @@ describe('resolve-template', () => {
 	});
 	
 	it('should return null if no properties from object exist', () => {
-		const actual = resolveTemplate(liveTemplate, { key: '1 + @' });
+		const actual = resolveTemplate({ key: '1 + @' });
 		expect(actual).toBeNull();
 	});
 	
@@ -40,36 +38,36 @@ describe('resolve-template', () => {
 	});
 	
 	it('should return null when template type is invalid', () => {
-		const actual = resolveTemplate(liveTemplate, 1);
+		const actual = resolveTemplate(1);
 		expect(actual).toBeNull();
 	});
 
 	describe('arrays', () => {
 		it('should repeat array template if data is an array', () => {
-			const actual = resolveTemplate(liveTemplate, [
+			const actual = resolveTemplate([
 				'@', [
 					'@ + 1',
 					'@ + 2',
 				]
-			], ['a', 'b']);
+			], {}, ['a', 'b']);
 
 			expect(actual).toEqual(['a1', 'a2', 'b1', 'b2']);
 		});
 
 		it('should return array of values that use different local data', () => {
-			const actual = resolveTemplate(liveTemplate, [
+			const actual = resolveTemplate([
 				{ key: '@' },
 				'1 + key',
 				{ key: '@' },
 				{ key: 'key + 1' },
 				'2 + key'
-			], 3);
+			], {}, 3);
 
 			expect(actual).toEqual([4, 6]);
 		});
 
 		it('should skip string template if object is null', () => {
-			const actual = resolveTemplate(liveTemplate, [
+			const actual = resolveTemplate([
 				{ key: '@' },
 				'1 + key'
 			]);
@@ -78,28 +76,28 @@ describe('resolve-template', () => {
 		});
 		
 		it('should resolve sub template using a custom scope', () => {
-			const actual = resolveTemplate(liveTemplate, [
+			const actual = resolveTemplate([
 				'key', [
 					'1 + @',
 					'2 + @'
 				]
-			], { key: 2 });
+			], {}, { key: 2 });
 
 			expect(actual).toEqual([3, 4]);
 		});
 
 		it('should skip sub template if the value before it is empty', () => {
-			const actual = resolveTemplate(liveTemplate, [
+			const actual = resolveTemplate([
 				'b', [
 					'"b"'
 				]
-			], 'a');
+			], {}, 'a');
 
 			expect(actual).toBeNull();
 		});
 		
 		it('should allow empty elements if the scope was also empty', () => {
-			const actual = resolveTemplate(liveTemplate, ['<div []>']);
+			const actual = resolveTemplate(['<div []>']);
 
 			expect(actual).toMatchObject([
 				{
@@ -110,11 +108,11 @@ describe('resolve-template', () => {
 		});
 		
 		it('should scope and wrap each sub template of an element properly', () => {
-			const actual = resolveTemplate(liveTemplate, [
+			const actual = resolveTemplate([
 				'<p [x] @>', [
 					'@'
 				]
-			], { x: ['a', 'b'] });
+			], {}, { x: ['a', 'b'] });
 
 			expect(actual).toMatchObject([
 				{
@@ -133,7 +131,7 @@ describe('resolve-template', () => {
 		});
 
 		it('should skip element if result of sub template is empty', () => {
-			const actual = resolveTemplate(liveTemplate, [
+			const actual = resolveTemplate([
 				'<div>', [
 					'a'
 				]
@@ -143,7 +141,7 @@ describe('resolve-template', () => {
 		});
 		
 		it('should still render container if sub template is empty', () => {
-			const actual = resolveTemplate(liveTemplate, [
+			const actual = resolveTemplate([
 				'<div>', []
 			]);
 
@@ -155,7 +153,7 @@ describe('resolve-template', () => {
 		});
 
 		it('should work with something more complicated', () => {
-			const actual = resolveTemplate(liveTemplate, [
+			const actual = resolveTemplate([
 				'<ul>', [
 					'<li [links]>', [
 						'<a [url & image & @] href: url> | @', [
@@ -168,7 +166,7 @@ describe('resolve-template', () => {
 						]
 					]
 				]
-			], {
+			], {}, {
 				links: [
 					{
 						url: '/one',
@@ -203,13 +201,103 @@ describe('resolve-template', () => {
 					type: 'ul',
 					classNames: [],
 					attributes: {},
-					events: {},
-					variables: {},
 					content: [
-						'<li><a href="/one"><img class="image" alt="image one" src="/one.jpg"></a><p>one one one <a href="/one">click one</a></p></li>',
-						'<li><a href="/two"><img class="image" alt="image two" src="/two.jpg"></a><p>two two two</p></li>',
-						'<li><img class="image" alt="image three" src="/three.jpg"><p>three three three</p></li>',
-						'<li><img class="image" alt="image three" src="/three.jpg"></li>'
+						{
+							type: 'li',
+							classNames: [],
+							attributes: {},
+							content: [
+								{
+									type: 'a',
+									classNames: [],
+									attributes: { href: '/one' },
+									content: [
+										{
+											type: 'img',
+											classNames: ['image'],
+											attributes: { alt: 'image one', src: '/one.jpg' },
+											content: []
+										}
+									]
+								},
+								{
+									type: 'p',
+									classNames: [],
+									attributes: {},
+									content: [
+										'one one one',
+										' ',
+										{
+											type: 'a',
+											attributes: { href: '/one' },
+											scope: 'click one'
+										}
+									]
+								}
+							]
+						},
+						{
+							type: 'li',
+							classNames: [],
+							attributes: {},
+							content: [
+								{
+									type: 'a',
+									classNames: [],
+									attributes: { href: '/two' },
+									content: [
+										{
+											type: 'img',
+											classNames: ['image'],
+											attributes: { alt: 'image two', src: '/two.jpg' },
+											content: []
+										}
+									]
+								},
+								{
+									type: 'p',
+									classNames: [],
+									attributes: {},
+									content: [
+										'two two two'
+									]
+								}
+							]
+						},
+						{
+							type: 'li',
+							classNames: [],
+							attributes: {},
+							content: [
+								{
+									type: 'img',
+									classNames: ['image'],
+									attributes: { alt: 'image three', src: '/three.jpg' },
+									content: []
+								},
+								{
+									type: 'p',
+									classNames: [],
+									attributes: {},
+									content: [
+										'three three three'
+									]
+								}
+							]
+						},
+						{
+							type: 'li',
+							classNames: [],
+							attributes: {},
+							content: [
+								{
+									type: 'img',
+									classNames: ['image'],
+									attributes: { alt: 'image three', src: '/three.jpg' },
+									content: []
+								}
+							]
+						}
 					]
 				}
 			]);

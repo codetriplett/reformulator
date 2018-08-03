@@ -13,7 +13,7 @@ const defaultAttributes = {
 	a: { href: 'javascript:void(0);' }
 };
 
-export function ElementStructure (liveTemplate = {}, type, options = {}) {
+export function ElementStructure (type, options = {}) {
 	const attributesAndVariables = mergeObjects(defaultAttributes[type] || {}, options.attributes || {});
 	let classNames = options.classNames || [];
 	const attributes = {};
@@ -42,9 +42,45 @@ export function ElementStructure (liveTemplate = {}, type, options = {}) {
 	this.content = [];
 	this.events = events;
 	this.variables = variables;
+}
+
+ElementStructure.prototype.append = function (newContent) {
+	if (singletonRegex.test(this.type)) {
+		return this;
+	}
+
+	let content = this.content;
+
+	if (!Array.isArray(newContent)) {
+		newContent = [newContent];
+	}
+
+	newContent.forEach(item => {
+		const itemIsElement = item instanceof ElementStructure;
+
+		if (itemIsElement) {
+			this.variables = { ...this.variables, ...item.variables };
+		}
+		
+		if (itemIsElement || literalTypeRegex.test(typeof item)) {
+			content.push(item);
+		}
+	});
+
+	return this;
+};
+
+ElementStructure.prototype.render = function (liveTemplate, existingElement) {
+	const type = this.type;
+	const classNames = this.classNames;
+	const attributes = this.attributes;
+	const events = this.events;
+	const scope = this.scope;
+	let content = this.content;
+	let element;
 
 	if (isClientSide()) {
-		let element = liveTemplate.element || document.createElement(type);
+		element = existingElement || document.createElement(type);
 
 		if (element !== liveTemplate.element || !liveTemplate.initialized) {
 			for (const key in events) {
@@ -75,45 +111,7 @@ export function ElementStructure (liveTemplate = {}, type, options = {}) {
 		
 		this.element = element;
 	}
-}
 
-ElementStructure.prototype.append = function (newContent) {
-	if (singletonRegex.test(this.type)) {
-		return this;
-	}
-
-	const element = this.element;
-	let content = this.content;
-
-	if (!Array.isArray(newContent)) {
-		newContent = [newContent];
-	}
-
-	newContent.forEach(item => {
-		let child;
-
-		if (item instanceof ElementStructure) {
-			this.variables = { ...this.variables, ...item.variables };
-			child = item.render();
-		} else if (literalTypeRegex.test(typeof item)) {
-			child = element ? document.createTextNode(item) : item;
-		}
-		
-		if (child) {
-			content.push(child);
-		}
-	});
-
-	return this;
-};
-
-ElementStructure.prototype.render = function () {
-	const type = this.type;
-	const classNames = this.classNames;
-	const attributes = this.attributes;
-	const scope = this.scope;
-	const element = this.element;
-	let content = this.content;
 	let result = element || `<${this.type}`;
 
 	if (isEmpty(content, true)) {
@@ -163,11 +161,23 @@ ElementStructure.prototype.render = function () {
 	}
 
 	if (!singletonRegex.test(type)) {
+		const children = content.map(child => {
+			if (child instanceof ElementStructure) {
+				return child.render(liveTemplate);
+			} if (literalTypeRegex.test(typeof child)) {
+				if (element) {
+					return document.createTextNode(child);
+				}
+
+				return child;
+			}
+		});
+
 		if (element) {
 			result.innerHTML = '';
-			content.forEach(child => result.appendChild(child));
+			children.forEach(child => result.appendChild(child));
 		} else {
-			result += `${content.join('')}</${type}>`;
+			result += `${children.join('')}</${type}>`;
 		}
 	}
 
