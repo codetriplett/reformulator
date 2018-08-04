@@ -32,7 +32,7 @@ LiveTemplate.prototype.resolve = function () {
 	if (Array.isArray(template) && Array.isArray(result) || startsWithElement) {
 		if (result.length > 1) {
 			const content = result;
-			result = new ElementStructure('div');
+			result = new ElementStructure('div', { templateId: '' });
 			result.append(content);
 		} else {
 			result = result[0];
@@ -43,7 +43,10 @@ LiveTemplate.prototype.resolve = function () {
 
 	if (resultIsElement) {
 		const variables = result.variables;
-		result = result.render(this, this.element);
+
+		this.elements = this.elements || {};
+		this.newElements = {};
+		result = result.render(this);
 
 		if (!isClientSide() && !isEmpty(variables, true)) {
 			const params = [template, ...stack].map(param => JSON.stringify(param));
@@ -51,6 +54,7 @@ LiveTemplate.prototype.resolve = function () {
 		}
 
 		this.element = result;
+		this.elements = this.newElements;
 	}
 
 	return resultIsElement || !isEmpty(result, true) ? result : '';

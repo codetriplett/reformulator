@@ -13,6 +13,7 @@ const typeRegex = new RegExp(`^${typeDefinition}$`);
 const scopeRegex = new RegExp(`^${arrayDefinition}`);
 
 export function resolveElement (string, state, ...stack) {
+	const templateId = (state || {})[''] || '';
 	const bracketIndex = string.indexOf('[');
 	const type = string.slice(1, bracketIndex).trim();
 
@@ -21,7 +22,7 @@ export function resolveElement (string, state, ...stack) {
 	}
 
 	if (bracketIndex === -1) {
-		return new ElementStructure(type, { scope: stack[0] });
+		return new ElementStructure(type, { scope: stack[0], templateId });
 	}
 
 	const scopeExpression = string.slice(bracketIndex).match(scopeRegex)[0].slice(1, -1).trim();
@@ -34,9 +35,11 @@ export function resolveElement (string, state, ...stack) {
 	} else if (Array.isArray(scope)) {
 		const reducedString = `${string.slice(0, bracketIndex)}[]${remainingString}>`;
 
-		const result = scope
-			.map(item => resolveElement(reducedString, state, item, ...stack))
-			.filter(item => !isEmpty(item));
+		const result = scope.map((item, i) => {
+			const repeatTemplateId = `${templateId}-${i}`;
+			const repeatState = { ...state, '': repeatTemplateId };
+			return resolveElement(reducedString, repeatState, item, ...stack);
+		}).filter(item => !isEmpty(item));
 
 		return result.length > 0 ? result : null;
 	}
@@ -53,5 +56,5 @@ export function resolveElement (string, state, ...stack) {
 
 	delete attributes[''];
 
-	return new ElementStructure(type, { scope, classNames, attributes });
+	return new ElementStructure(type, { scope, classNames, attributes, templateId });
 }

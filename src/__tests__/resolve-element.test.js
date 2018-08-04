@@ -2,7 +2,7 @@ import { resolveElement } from '../resolve-element';
 
 describe('resolve-element', () => {
 	it('should parse element string', () => {
-		const actual = resolveElement('<div [a] @, @ + 1, key: @, flag: true>', {}, { a: 'a' });
+		const actual = resolveElement('<div [a] @, @ + 1, key: @, flag: true>', { '': '.0.1' }, { a: 'a' });
 
 		expect(actual).toEqual({
 			type: 'div',
@@ -11,7 +11,8 @@ describe('resolve-element', () => {
 			content: [],
 			scope: 'a',
 			events: {},
-			variables: {}
+			variables: {},
+			templateId: '.0.1' 
 		});
 	});
 

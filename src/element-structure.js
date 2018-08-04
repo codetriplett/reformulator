@@ -42,6 +42,7 @@ export function ElementStructure (type, options = {}) {
 	this.content = [];
 	this.events = events;
 	this.variables = variables;
+	this.templateId = options.templateId;
 }
 
 ElementStructure.prototype.append = function (newContent) {
@@ -70,19 +71,24 @@ ElementStructure.prototype.append = function (newContent) {
 	return this;
 };
 
-ElementStructure.prototype.render = function (liveTemplate, existingElement) {
+ElementStructure.prototype.render = function (liveTemplate) {
 	const type = this.type;
 	const classNames = this.classNames;
 	const attributes = this.attributes;
 	const events = this.events;
 	const scope = this.scope;
 	let content = this.content;
+	let templateId = this.templateId;
+	let shadow = liveTemplate.elements[templateId];
 	let element;
 
 	if (isClientSide()) {
-		element = existingElement || document.createElement(type);
+		if (shadow) {
+			element = shadow.element;
+		} else {
+			element = (!liveTemplate.initialized && liveTemplate.element) || document.createElement(type);
+			liveTemplate.initialized = true;
 
-		if (element !== liveTemplate.element || !liveTemplate.initialized) {
 			for (const key in events) {
 				const variable = events[key];
 
@@ -101,12 +107,6 @@ ElementStructure.prototype.render = function (liveTemplate, existingElement) {
 						break;
 				}
 			}
-
-			liveTemplate.initialized = true;
-		}
-		
-		if (element === liveTemplate.element) {
-			liveTemplate.element = undefined;
 		}
 		
 		this.element = element;
@@ -123,45 +123,49 @@ ElementStructure.prototype.render = function (liveTemplate, existingElement) {
 		}
 	}
 	
-	const classString = classNames.sort().join(' ');
+	if (!shadow || !isEqual(classNames, shadow.classNames)) {
+		const classString = classNames.sort().join(' ');
 
-	if (element) {
-		if (classString) {
-			result.className = classString;
-		} else {
-			result.removeAttribute('class');
+		if (element) {
+			if (classString) {
+				result.className = classString;
+			} else {
+				result.removeAttribute('class');
+			}
+		} else if (classString) {
+			result += ` class="${classString}"`;
 		}
-	} else if (classString) {
-		result += ` class="${classString}"`;
 	}
 	
-	let attributeString = '';
-	let flagString = '';
-	
-	Object.keys(attributes).sort().forEach(key => {
-		const value = attributes[key];
+	if (!shadow || !isEqual(attributes, shadow.attributes)) {
+		let attributeString = '';
+		let flagString = '';
+		
+		Object.keys(attributes).sort().forEach(key => {
+			const value = attributes[key];
+
+			if (!element) {
+				const keyString = ` ${key}`;
+
+				if (literalTypeRegex.test(typeof value)) {
+					attributeString += `${keyString}="${value}"`;
+				} else if (value === true) {
+					flagString += keyString;
+				}
+			} else if (value) {
+				result.setAttribute(key, value);
+			} else {
+				result.removeAttribute(key);
+			}
+		});
 
 		if (!element) {
-			const keyString = ` ${key}`;
-
-			if (literalTypeRegex.test(typeof value)) {
-				attributeString += `${keyString}="${value}"`;
-			} else if (value === true) {
-				flagString += keyString;
-			}
-		} else if (value) {
-			result.setAttribute(key, value);
-		} else {
-			result.removeAttribute(key);
+			result += `${attributeString}${flagString}>`;
 		}
-	});
-
-	if (!element) {
-		result += `${attributeString}${flagString}>`;
 	}
 
 	if (!singletonRegex.test(type)) {
-		const children = content.map(child => {
+		const newChildren = content.map(child => {
 			if (child instanceof ElementStructure) {
 				return child.render(liveTemplate);
 			} if (literalTypeRegex.test(typeof child)) {
@@ -174,11 +178,21 @@ ElementStructure.prototype.render = function (liveTemplate, existingElement) {
 		});
 
 		if (element) {
-			result.innerHTML = '';
-			children.forEach(child => result.appendChild(child));
+			newChildren.forEach(child => element.appendChild(child));
+
+			const elementChildren = Array.apply(this, element.childNodes);
+			const elementChildrenSurplusCount = elementChildren.length - newChildren.length;
+
+			for (let i = 0; i < elementChildrenSurplusCount; i++) {
+				element.removeChild(elementChildren[i]);
+			}
 		} else {
-			result += `${children.join('')}</${type}>`;
+			result += `${newChildren.join('')}</${type}>`;
 		}
+	}
+
+	if (templateId !== undefined) {
+		liveTemplate.newElements[templateId] = this;
 	}
 
 	return result;

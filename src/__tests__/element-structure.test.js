@@ -79,6 +79,10 @@ function testElement (element, tagName = '', attributes = {}, children = []) {
 }
 
 describe('element-structure', () => {
+	beforeEach(() => {
+		liveTemplate.elements = {};
+	});
+
 	it('should add default alt text for img elements if none is provided', () => {
 		const actual = new ElementStructure('img');
 		expect(actual.attributes.alt).toBe('');
@@ -108,6 +112,7 @@ describe('element-structure', () => {
 		let elementStructure;
 
 		beforeEach(() => {
+			liveTemplate.elements = {};
 			isClientSide.mockReturnValue(false);
 
 			elementStructure = new ElementStructure('div', {
@@ -191,6 +196,9 @@ describe('element-structure', () => {
 		beforeEach(() => {
 			isClientSide.mockReturnValue(true);
 			liveTemplate.update.mockClear();
+			liveTemplate.element = document.createElement('div');
+			liveTemplate.newElements = {};
+			liveTemplate.elements = {};
 
 			elementStructure = new ElementStructure('div', {
 				scope: 1,
@@ -270,11 +278,12 @@ describe('element-structure', () => {
 			testElement(actual, 'input', { value: 'asdf' });
 		});
 
-		it('should attach to input element if one is provided', () => {
-			const element = document.createElement('div');
-			const elementStructure = new ElementStructure('div', {});
-			const actual = elementStructure.render(liveTemplate, element);
+		it('should use existing element if one exists', () => {
+			const element = document.createElement('p');
+			liveTemplate.elements['.0.1'] = { element };
+			elementStructure = new ElementStructure('p', { templateId: '.0.1' });
 
+			const actual = elementStructure.render(liveTemplate);
 			expect(actual).toBe(element);
 		});
 	});
