@@ -27,21 +27,16 @@ LiveTemplate.prototype.resolve = function () {
 	const template = this.template;
 	const stack = this.stack;
 	let result = resolveTemplate(template, this.state, ...stack);
-	const startsWithElement = Array.isArray(result) && result[0] instanceof ElementStructure;
+	const resultIsArray = Array.isArray(result);
+	const resultIsElement = (resultIsArray && result[0] || result) instanceof ElementStructure;
 
-	if (Array.isArray(template) && Array.isArray(result) || startsWithElement) {
-		if (result.length > 1) {
+	if (resultIsElement) {
+		if (resultIsArray) {
 			const content = result;
 			result = new ElementStructure('div', { templateId: '' });
 			result.append(content);
-		} else {
-			result = result[0];
 		}
-	}
-
-	const resultIsElement = result instanceof ElementStructure;
-
-	if (resultIsElement) {
+		
 		const variables = result.variables;
 
 		this.elements = this.elements || {};

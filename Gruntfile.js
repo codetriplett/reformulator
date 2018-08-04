@@ -72,7 +72,8 @@ module.exports = function (grunt) {
 					'temp/resolve-structure.js',
 					'temp/resolve-template.js',
 					'temp/resolve-value.js',
-					'temp/type-of.js'
+					'temp/type-of.js',
+					'temp/update-children.js'
 				],
 				dest: 'temp/reformulator.js',
 			}
@@ -96,6 +97,7 @@ module.exports = function (grunt) {
 					'lib/resolve-template.js': 'src/resolve-template.js',
 					'lib/resolve-value.js': 'src/resolve-value.js',
 					'lib/type-of.js': 'src/type-of.js',
+					'lib/update-children.js': 'src/update-children.js',
 					'temp/reformulator.js': 'temp/reformulator.js'
 				}
 			}

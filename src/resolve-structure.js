@@ -1,5 +1,5 @@
 import {
-	variableRegex,
+	keyRegex,
 	stringDefinition
 } from './patterns';
 
@@ -32,7 +32,7 @@ export function resolveStructure (string, state, ...stack) {
 		const isEvent = keepBoth && key.indexOf('on') === 0;
 		remainingString = remainingString.slice(commaIndex + 1);
 
-		if ((colonIndex !== -1 && !variableRegex.test(key)) || !expressionRegex.test(expression)) {
+		if ((colonIndex !== -1 && !keyRegex.test(key)) || !expressionRegex.test(expression)) {
 			return null;
 		}
 

@@ -47,8 +47,8 @@ describe('resolve-structure', () => {
 
 	describe('attributes', () => {
 		it('should parse attributes', () => {
-			const actual = resolveStructure('<1 + 2, b: b >', {}, { b: 'b' });
-			expect(actual).toEqual({ '': [3], b: 'b' });
+			const actual = resolveStructure('<1 + 2, data-b: b >', {}, { b: 'b' });
+			expect(actual).toEqual({ '': [3], 'data-b': 'b' });
 		});
 
 		it('should not treat event attributes values as expressions', () => {

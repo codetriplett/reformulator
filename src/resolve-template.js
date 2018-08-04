@@ -37,6 +37,7 @@ export function resolveTemplate (template, state, ...stack) {
 		let firstInStack = stack[0];
 		let containerArray = [firstInStack];
 		const remainingStack = stack.slice(1);
+		let candidateContainerCount = 0;
 
 		(template.concat('@')).forEach((item, i) => {
 			const isArray = Array.isArray(item);
@@ -55,17 +56,17 @@ export function resolveTemplate (template, state, ...stack) {
 					result = result.concat(containerArray);
 				}
 
+				candidateContainerCount += containerArray.length > 1 ? 2 : 1;
 				containerArray = [firstInStack];
 			}
 			
 			containerArray = containerArray.reduce((containerArray, container) => {
 				const containerIsElement = container instanceof ElementStructure;
 				const local = [containerIsElement ? container.scope : container].filter(item => item);
-				const childState = {  ...state, '': `${templateId}.${i}` };
+				const childState = { ...state, '': `${templateId}.${i}` };
 				const value = resolveTemplate(item, childState, ...local, ...remainingStack);
-				const valueIsEmpty = isEmpty(value, true);
 
-				if (valueIsEmpty && (!isArray || item.length > 0)) {
+				if (isEmpty(value, true) && (!isArray || item.length > 0)) {
 					container = [];
 				} else if (currentStage < 2) {
 					container = value;
@@ -78,6 +79,10 @@ export function resolveTemplate (template, state, ...stack) {
 
 			previousStage = currentStage;
 		});
+
+		if (candidateContainerCount === 1) {
+			result = result[0];
+		}
 	} else if (typeof template === 'object') {
 		result = {};
 

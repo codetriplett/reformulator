@@ -127,5 +127,22 @@ describe('live-template', () => {
 			expect(actual.className).toBe('on');
 			expect(actual.children[0].innerHTML).toBe('Turn Off');
 		});
+
+		it('should update properly after a key event', () => {
+			const liveTemplate = new LiveTemplate([
+				'<input [] onkeypress: value>',
+				'<p ["value: " + value]>'
+			]);
+
+			let actual = liveTemplate.resolve();
+			expect(actual.children).toHaveLength(1);
+
+			let input = actual.children[0];
+			liveTemplate.update('value', 'asdf');
+
+			expect(actual.children).toHaveLength(2);
+			expect(actual.children[0]).toBe(input);
+			expect(actual.children[1].innerHTML).toBe('value: asdf');
+		});
 	});
 });

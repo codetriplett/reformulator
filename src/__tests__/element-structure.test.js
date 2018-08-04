@@ -113,6 +113,7 @@ describe('element-structure', () => {
 
 		beforeEach(() => {
 			liveTemplate.elements = {};
+			liveTemplate.newElements = {};
 			isClientSide.mockReturnValue(false);
 
 			elementStructure = new ElementStructure('div', {
@@ -120,6 +121,7 @@ describe('element-structure', () => {
 				classNames: ['two', 'one'],
 				attributes: {
 					key: 'value',
+					'data-key': 'value',
 					onclick: 'expanded'
 				}
 			});
@@ -130,8 +132,8 @@ describe('element-structure', () => {
 				type: 'div',
 				scope: 1,
 				classNames: ['one', 'two'],
-				attributes: { key: 'value' },
-				content: [],
+				attributes: { 'data-key': 'value' },
+				content: undefined,
 				events: { onclick: 'expanded' },
 				variables: { expanded: true },
 				element: undefined
@@ -140,7 +142,7 @@ describe('element-structure', () => {
 
 		it('should render a child', () => {
 			const actual = elementStructure.render(liveTemplate);
-			expect(actual).toBe('<div class="one two" key="value">1</div>');
+			expect(actual).toBe('<div class="one two" data-key="value">1</div>');
 		});
 
 		it('should append a string', () => {
@@ -168,7 +170,7 @@ describe('element-structure', () => {
 			const child = new ElementStructure('span');
 			elementStructure.append(child);
 
-			expect(elementStructure.content).toEqual([]);
+			expect(elementStructure.content).toBeUndefined();
 		});
 
 		it('should render a parent', () => {
@@ -180,7 +182,7 @@ describe('element-structure', () => {
 			const actual = elementStructure.render(liveTemplate);
 
 			expect(Object.keys(elementStructure.variables).sort()).toEqual(['expanded', 'visible']);
-			expect(actual).toBe('<div class="one two" key="value"><span></span></div>');
+			expect(actual).toBe('<div class="one two" data-key="value"><span></span></div>');
 		});
 		
 		it('should set scope as value attribute for inputs', () => {
@@ -204,7 +206,7 @@ describe('element-structure', () => {
 				scope: 1,
 				classNames: ['two', 'one'],
 				attributes: {
-					key: 'value',
+					'data-key': 'value',
 					onclick: 'expanded'
 				}
 			});
@@ -215,7 +217,7 @@ describe('element-structure', () => {
 
 			testElement(actual, 'div', {
 				class: 'one two',
-				key: 'value'
+				'data-key': 'value'
 			});
 		});
 
@@ -252,7 +254,7 @@ describe('element-structure', () => {
 			const child = new ElementStructure('span');
 			elementStructure.append(child);
 
-			expect(elementStructure.content).toHaveLength(0);
+			expect(elementStructure.content).toBeUndefined();
 		});
 
 		it('should render a parent', () => {
@@ -266,7 +268,7 @@ describe('element-structure', () => {
 			expect(Object.keys(elementStructure.variables).sort()).toEqual(['expanded', 'visible']);
 			testElement(actual, 'div', {
 				class: 'one two',
-				key: 'value'
+				'data-key': 'value'
 			}, [
 				['span', {}, '']
 			]);

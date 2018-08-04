@@ -1,10 +1,14 @@
-import { spaceRegex } from './patterns';
+import {
+	literalTypeRegex,
+	rangeRegex,
+	spaceRegex,
+} from './patterns';
+
 import { isClientSide } from './environment';
-import { isEmpty } from './is-empty';
 import { isEqual } from './is-equal';
 import { mergeObjects } from './merge-objects';
+import { updateChildren } from './update-children';
 
-const literalTypeRegex = /^(string|number)$/;
 const singletonRegex = /^(wbr|track|source|param|meta|link|keygen|input|img|hr|embed|command|col|br|base|area|!doctype)$/;
 const inputRegex = /^(input)$/;
 
@@ -16,6 +20,7 @@ const defaultAttributes = {
 export function ElementStructure (type, options = {}) {
 	const attributesAndVariables = mergeObjects(defaultAttributes[type] || {}, options.attributes || {});
 	let classNames = options.classNames || [];
+	let templateId = options.templateId;
 	const attributes = {};
 	const events = {};
 	const variables = {};
@@ -30,8 +35,10 @@ export function ElementStructure (type, options = {}) {
 		if (key.indexOf('on') === 0) {
 			events[key] = value;
 			variables[value] = true;
-		} else {
+		} else if (key !== 'key') {
 			attributes[key] = value;
+		} else if (templateId) {
+			templateId = templateId.replace(rangeRegex, `-${value}`);
 		}
 	}
 
@@ -39,18 +46,18 @@ export function ElementStructure (type, options = {}) {
 	this.scope = options.scope;
 	this.classNames = classNames.sort();
 	this.attributes = attributes;
-	this.content = [];
+	this.content = options.content;
 	this.events = events;
 	this.variables = variables;
-	this.templateId = options.templateId;
+	this.templateId = templateId;
 }
 
 ElementStructure.prototype.append = function (newContent) {
 	if (singletonRegex.test(this.type)) {
 		return this;
 	}
-
-	let content = this.content;
+	
+	let content = this.content = [];
 
 	if (!Array.isArray(newContent)) {
 		newContent = [newContent];
@@ -67,6 +74,8 @@ ElementStructure.prototype.append = function (newContent) {
 			content.push(item);
 		}
 	});
+
+	this.content = content;
 
 	return this;
 };
@@ -114,7 +123,7 @@ ElementStructure.prototype.render = function (liveTemplate) {
 
 	let result = element || `<${this.type}`;
 
-	if (isEmpty(content, true)) {
+	if (content === undefined && literalTypeRegex.test(typeof scope)) {
 		if (inputRegex.test(type)) {
 			attributes.value = scope;
 		} else {
@@ -165,7 +174,7 @@ ElementStructure.prototype.render = function (liveTemplate) {
 	}
 
 	if (!singletonRegex.test(type)) {
-		const newChildren = content.map(child => {
+		const newChildren = (content || []).map(child => {
 			if (child instanceof ElementStructure) {
 				return child.render(liveTemplate);
 			} if (literalTypeRegex.test(typeof child)) {
@@ -178,14 +187,7 @@ ElementStructure.prototype.render = function (liveTemplate) {
 		});
 
 		if (element) {
-			newChildren.forEach(child => element.appendChild(child));
-
-			const elementChildren = Array.apply(this, element.childNodes);
-			const elementChildrenSurplusCount = elementChildren.length - newChildren.length;
-
-			for (let i = 0; i < elementChildrenSurplusCount; i++) {
-				element.removeChild(elementChildren[i]);
-			}
+			updateChildren(element, newChildren);
 		} else {
 			result += `${newChildren.join('')}</${type}>`;
 		}

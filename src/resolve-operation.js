@@ -43,7 +43,7 @@ export function resolveOperation (firstValue, operator, secondValue) {
 		case '!:empty:structure':
 		case '!:empty:literal':
 		case '!:empty:empty':
-			result = firstValue === undefined ? isEmpty(secondValue, true) : null;
+			result = firstValue === undefined ? secondValue === false || isEmpty(secondValue, true) : null;
 			break;
 		case '<:structure:structure':
 			result = isEqual(secondValue, firstValue, true) && !isEqual(secondValue, firstValue) ? firstValue : null;
@@ -63,7 +63,7 @@ export function resolveOperation (firstValue, operator, secondValue) {
 		case '?:empty:structure':
 		case '?:empty:literal':
 		case '?:empty:empty':
-			result = firstValue === undefined ? !isEmpty(secondValue, true) : null;
+			result = firstValue === undefined ? !isEmpty(secondValue, true) && secondValue !== false : null;
 			break;
 	}
 

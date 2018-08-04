@@ -99,12 +99,10 @@ describe('resolve-template', () => {
 		it('should allow empty elements if the scope was also empty', () => {
 			const actual = resolveTemplate(['<div []>']);
 
-			expect(actual).toMatchObject([
-				{
-					type: 'div',
-					scope: null
-				}
-			]);
+			expect(actual).toMatchObject({
+				type: 'div',
+				scope: null
+			});
 		});
 		
 		it('should scope and wrap each sub template of an element properly', () => {
@@ -145,11 +143,9 @@ describe('resolve-template', () => {
 				'<div>', []
 			]);
 
-			expect(actual).toMatchObject([
-				{
-					type: 'div'
-				}
-			]);
+			expect(actual).toMatchObject({
+				type: 'div'
+			});
 		});
 
 		it('should work with something more complicated', () => {
@@ -196,111 +192,109 @@ describe('resolve-template', () => {
 				]
 			});
 
-			expect(actual).toMatchObject([
-				{
-					type: 'ul',
-					classNames: [],
-					attributes: {},
-					content: [
-						{
-							type: 'li',
-							classNames: [],
-							attributes: {},
-							content: [
-								{
-									type: 'a',
-									classNames: [],
-									attributes: { href: '/one' },
-									content: [
-										{
-											type: 'img',
-											classNames: ['image'],
-											attributes: { alt: 'image one', src: '/one.jpg' },
-											content: []
-										}
-									]
-								},
-								{
-									type: 'p',
-									classNames: [],
-									attributes: {},
-									content: [
-										'one one one',
-										' ',
-										{
-											type: 'a',
-											attributes: { href: '/one' },
-											scope: 'click one'
-										}
-									]
-								}
-							]
-						},
-						{
-							type: 'li',
-							classNames: [],
-							attributes: {},
-							content: [
-								{
-									type: 'a',
-									classNames: [],
-									attributes: { href: '/two' },
-									content: [
-										{
-											type: 'img',
-											classNames: ['image'],
-											attributes: { alt: 'image two', src: '/two.jpg' },
-											content: []
-										}
-									]
-								},
-								{
-									type: 'p',
-									classNames: [],
-									attributes: {},
-									content: [
-										'two two two'
-									]
-								}
-							]
-						},
-						{
-							type: 'li',
-							classNames: [],
-							attributes: {},
-							content: [
-								{
-									type: 'img',
-									classNames: ['image'],
-									attributes: { alt: 'image three', src: '/three.jpg' },
-									content: []
-								},
-								{
-									type: 'p',
-									classNames: [],
-									attributes: {},
-									content: [
-										'three three three'
-									]
-								}
-							]
-						},
-						{
-							type: 'li',
-							classNames: [],
-							attributes: {},
-							content: [
-								{
-									type: 'img',
-									classNames: ['image'],
-									attributes: { alt: 'image three', src: '/three.jpg' },
-									content: []
-								}
-							]
-						}
-					]
-				}
-			]);
+			expect(actual).toMatchObject({
+				type: 'ul',
+				classNames: [],
+				attributes: {},
+				content: [
+					{
+						type: 'li',
+						classNames: [],
+						attributes: {},
+						content: [
+							{
+								type: 'a',
+								classNames: [],
+								attributes: { href: '/one' },
+								content: [
+									{
+										type: 'img',
+										classNames: ['image'],
+										attributes: { alt: 'image one', src: '/one.jpg' },
+										content: undefined
+									}
+								]
+							},
+							{
+								type: 'p',
+								classNames: [],
+								attributes: {},
+								content: [
+									'one one one',
+									' ',
+									{
+										type: 'a',
+										attributes: { href: '/one' },
+										scope: 'click one'
+									}
+								]
+							}
+						]
+					},
+					{
+						type: 'li',
+						classNames: [],
+						attributes: {},
+						content: [
+							{
+								type: 'a',
+								classNames: [],
+								attributes: { href: '/two' },
+								content: [
+									{
+										type: 'img',
+										classNames: ['image'],
+										attributes: { alt: 'image two', src: '/two.jpg' },
+										content: undefined
+									}
+								]
+							},
+							{
+								type: 'p',
+								classNames: [],
+								attributes: {},
+								content: [
+									'two two two'
+								]
+							}
+						]
+					},
+					{
+						type: 'li',
+						classNames: [],
+						attributes: {},
+						content: [
+							{
+								type: 'img',
+								classNames: ['image'],
+								attributes: { alt: 'image three', src: '/three.jpg' },
+								content: undefined
+							},
+							{
+								type: 'p',
+								classNames: [],
+								attributes: {},
+								content: [
+									'three three three'
+								]
+							}
+						]
+					},
+					{
+						type: 'li',
+						classNames: [],
+						attributes: {},
+						content: [
+							{
+								type: 'img',
+								classNames: ['image'],
+								attributes: { alt: 'image three', src: '/three.jpg' },
+								content: undefined
+							}
+						]
+					}
+				]
+			});
 		});
 	});
 });

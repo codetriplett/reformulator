@@ -152,6 +152,11 @@ describe('resolve-operation', () => {
 			expect(actual).toBe(true);
 		});
 
+		it('should return false if immediate value is false', () => {
+			const actual = resolveOperation(undefined, '!', false);
+			expect(actual).toBe(true);
+		});
+
 		it('should return false if immediate value is defined', () => {
 			const actual = resolveOperation(undefined, '!', 2);
 			expect(actual).toBe(false);
@@ -556,13 +561,18 @@ describe('resolve-operation', () => {
 	});
 	
 	describe('?', () => {
-		it('should return true if value exists', () => {
+		it('should return true if immediate value exists', () => {
 			const actual = resolveOperation(undefined, '?', { a: 'a' });
 			expect(actual).toBe(true);
 		});
 
-		it('should return false if value does not exist', () => {
+		it('should return false if immediate value does not exist', () => {
 			const actual = resolveOperation(undefined, '?', null);
+			expect(actual).toBe(false);
+		});
+
+		it('should return false if immediate value is false', () => {
+			const actual = resolveOperation(undefined, '?', false);
 			expect(actual).toBe(false);
 		});
 	});
