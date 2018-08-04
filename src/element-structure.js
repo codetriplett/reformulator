@@ -1,6 +1,5 @@
 import {
 	literalTypeRegex,
-	rangeRegex,
 	spaceRegex,
 } from './patterns';
 
@@ -11,6 +10,7 @@ import { updateChildren } from './update-children';
 
 const singletonRegex = /^(wbr|track|source|param|meta|link|keygen|input|img|hr|embed|command|col|br|base|area|!doctype)$/;
 const inputRegex = /^(input)$/;
+const rangeRegex = /(-[0-9]+)?$/;
 
 const defaultAttributes = {
 	img: { alt: '' },
@@ -177,19 +177,21 @@ ElementStructure.prototype.render = function (liveTemplate) {
 		const newChildren = (content || []).map(child => {
 			if (child instanceof ElementStructure) {
 				return child.render(liveTemplate);
-			} if (literalTypeRegex.test(typeof child)) {
-				if (element) {
-					return document.createTextNode(child);
-				}
-
-				return child;
+			} else if (element) {
+				return document.createTextNode(child);
 			}
+
+			return child;
 		});
 
-		if (element) {
-			updateChildren(element, newChildren);
-		} else {
+		const plainText = newChildren.length === 1 && !newChildren[0].tagName && newChildren[0].nodeValue;
+
+		if (!element) {
 			result += `${newChildren.join('')}</${type}>`;
+		} else if (newChildren.length > 1 || !plainText) {
+			updateChildren(element, newChildren);
+		} else if (plainText !== element.innerHTML) {
+			element.innerHTML = plainText || '';
 		}
 	}
 

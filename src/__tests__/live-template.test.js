@@ -49,6 +49,17 @@ describe('live-template', () => {
 			expect(actual).toBe('<div><p>a</p><p>b</p></div>');
 		});
 
+		it('should not set parent state to empty children', () => {
+			const liveTemplate = new LiveTemplate([
+				'@', [
+					'<p []>'
+				]
+			], ['a', 'b']);
+
+			const actual = liveTemplate.resolve();
+			expect(actual).toBe('<div><p></p><p></p></div>');
+		});
+
 		it('should not include client side initializer if not needed', () => {
 			const liveTemplate = new LiveTemplate('<p ["a"]>');
 			const actual = liveTemplate.resolve();
@@ -70,6 +81,26 @@ describe('live-template', () => {
 		beforeEach(() => {
 			isClientSide.mockReturnValue(true);
 			document.body.innerHTML = '';
+		});
+
+		it('should set data and element if both are provided', () => {
+			const element = document.createElement('div');
+			const actual = new LiveTemplate('1 + a', { a: 'a' }, element);
+
+			expect(actual).toMatchObject({
+				data: { a: 'a' },
+				element
+			});
+		});
+
+		it('should set element using second parameter if data is not provided', () => {
+			const element = document.createElement('div');
+			const actual = new LiveTemplate('1 + a', element);
+
+			expect(actual).toMatchObject({
+				data: undefined,
+				element
+			});
 		});
 
 		it('should return single element from string', () => {

@@ -57,5 +57,6 @@ export function updateChildren (element, newChildren) {
 		newChildrenBuffer.push(newChild);
 	}
 
+	elementChildrenBuffer = elementChildren.slice(elementChildrenIndex, elementChildrenLength);
 	swapChildren(element, elementChildrenBuffer, newChildrenBuffer);
 }

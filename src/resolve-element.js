@@ -17,24 +17,26 @@ export function resolveElement (string, state, ...stack) {
 	const templateId = (state || {})[''] || '';
 	const bracketIndex = string.indexOf('[');
 	const type = string.slice(1, bracketIndex).trim();
+	let content = [];
 
 	if (!typeRegex.test(type)) {
 		return null;
 	}
 
 	if (bracketIndex === -1) {
-		return new ElementStructure(type, { scope: stack[0], templateId });
+		return new ElementStructure(type, { content, scope: stack[0], templateId });
 	}
 
 	const scopeExpression = string.slice(bracketIndex).match(scopeRegex)[0].slice(1, -1).trim();
 	let remainingString = `${string.slice(bracketIndex + scopeExpression.length + 2, -1)}`;
-
 	const scope = resolveExpression(scopeExpression || '@', state, ...stack);
+
+	content = !scopeExpression ? [] : undefined;
 
 	if (scopeExpression && isEmpty(scope)) {
 		return null;
 	} else if (Array.isArray(scope)) {
-		const reducedString = `${string.slice(0, bracketIndex)}[]${remainingString}>`;
+		const reducedString = `${string.slice(0, bracketIndex)}[@]${remainingString}>`;
 
 		const result = scope.map((item, i) => {
 			const repeatTemplateId = `${templateId}-${i}`;
@@ -57,5 +59,5 @@ export function resolveElement (string, state, ...stack) {
 
 	delete attributes[''];
 
-	return new ElementStructure(type, { scope, classNames, attributes, templateId });
+	return new ElementStructure(type, { classNames, attributes, content, scope, templateId });
 }

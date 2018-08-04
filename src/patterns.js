@@ -8,5 +8,4 @@ export const elementDefinition = `< *${typeDefinition} *(${arrayDefinition}(${st
 export const variableRegex = new RegExp(`^${variableDefinition}$`);
 export const keyRegex = new RegExp(`^${keyDefinition}$`);
 export const literalTypeRegex = /^(string|number)$/;
-export const rangeRegex = /-[0-9]+$/;
 export const spaceRegex = / +/g;

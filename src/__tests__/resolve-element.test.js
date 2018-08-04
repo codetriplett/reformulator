@@ -12,7 +12,7 @@ describe('resolve-element', () => {
 			scope: 'a',
 			events: {},
 			variables: {},
-			templateId: '.0.1' 
+			templateId: '.0.1-a' 
 		});
 	});
 
