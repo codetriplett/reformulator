@@ -12,8 +12,10 @@ reform('<p ["Hello " + value]>', { value: 'World' });
 ### Browser
 ```html
 <script src="reformulator.min.js"></script>
-<script>reform('"Hello " + value', { value: 'World' });</script>
+<script>reform('<p ["Hello " + value]>', { value: 'World' }, element);</script>
 ```
+
+The element you pass as the third parameter will be used as the attach point for the new element. You can pass it as the second parameter if there is no data.
 
 ## Examples
 
@@ -95,7 +97,7 @@ reform([
 });
 ```
 
-The call above will produce the HTML below.
+The call above will produce the HTML below. The script tag will initialize the HTML client side. It will only show up for the server side render and only if it finds an interactable element. You can deactivate this feature by passing a boolean 'false' as the third parameter to the reform function.
 
 ```html
 <div>
@@ -104,7 +106,7 @@ The call above will produce the HTML below.
 	<p>Dolor</p>
 	<a href="javascript:void(0);">Show More</a>
 </div>
-<script>reform(["<p [items - (expanded & 0 | items.'length' - 3)]>","<a ['Show ' + (expanded & 'Less' | 'More')] onclick: expanded>"],{"items":["Lorem","Ipsum","Dolor","Sit","Amet"]});</script>
+<script>reform(["<p [items - (expanded & 0 | items.'length' - 3)]>","<a ['Show ' + (expanded & 'Less' | 'More')] onclick: expanded>"],{"items":["Lorem","Ipsum","Dolor","Sit","Amet"]},true);</script>
 ```
 
 The HTML will change to the following after clicking the "Show More" button.

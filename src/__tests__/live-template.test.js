@@ -90,13 +90,19 @@ describe('live-template', () => {
 			expect(actual).toBe('<p>a</p>');
 		});
 
+		it('should not include client side initializer if it was deactivated', () => {
+			const liveTemplate = new LiveTemplate('<a [@ + (on & "Off" | "On")] onclick: on>', 'Turn ', false);
+			const actual = liveTemplate.resolve();
+			expect(actual).toBe('<a href="javascript:void(0);">Turn On</a>');
+		});
+
 		it('should include client side initializer if needed', () => {
 			const liveTemplate = new LiveTemplate('<a [@ + (on & "Off" | "On")] onclick: on>', 'Turn ');
 			const actual = liveTemplate.resolve();
 			
 			expect(actual).toBe([
 				'<a href="javascript:void(0);">Turn On</a>',
-				'<script>reform("<a [@ + (on & \\"Off\\" | \\"On\\")] onclick: on>", "Turn ");</script>'
+				'<script>reform("<a [@ + (on & \\"Off\\" | \\"On\\")] onclick: on>","Turn ",true);</script>'
 			].join(''));
 		});
 	});
@@ -125,6 +131,21 @@ describe('live-template', () => {
 				data: undefined,
 				element
 			});
+		});
+
+		it('should find element using the initializer script if true was passed in its place', () => {
+			document.body.innerHTML = '<div></div><script>reform();</script>';
+
+			const element = document.querySelector('div');
+			const actual = new LiveTemplate('1 + a', undefined, true);
+
+			expect(actual.element).toBe(element);
+		});
+
+		it('should not find element using the initializer script if the feature was not activated', () => {
+			document.body.innerHTML = '<div></div><script>reform();</script>';
+			const actual = new LiveTemplate('1 + a');
+			expect(actual.element).toBeUndefined();
 		});
 
 		it('should return single element from string', () => {

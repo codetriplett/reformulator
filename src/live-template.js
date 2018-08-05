@@ -5,27 +5,28 @@ import { resolveTemplate } from './resolve-template';
 
 export function LiveTemplate (template, ...others) {
 	let data = others[0];
+	let element = others[1];
 
 	if (isClientSide()) {
-		let element;
-
 		if (data instanceof Element) {
 			element = data;
 			data = undefined;
-		} else {
+		} else if (element === true) {
 			const scripts = document.querySelectorAll('script');
+			const script = scripts[scripts.length - 1];
 
-			if (scripts.length > 0) {
-				element = scripts[scripts.length - 1].previousSibling;
+			if (script && script.innerHTML.indexOf('reform(') === 0) {
+				element = script.previousSibling;
 			}
+		} else if (!(element instanceof Element)) {
+			element = undefined;
 		}
-
-		this.element = element;
 	}
 
 	this.template = template;
 	this.data = data;
 	this.state = {};
+	this.element = element;
 }
 
 LiveTemplate.prototype.update = function (variable, value) {
@@ -48,16 +49,16 @@ LiveTemplate.prototype.resolve = function () {
 			result = new ElementStructure('div', { templateId: '' });
 			result.append(content);
 		}
-		
+
 		const variables = result.variables;
 
 		this.elements = this.elements || {};
 		this.newElements = {};
 		result = result.render(this);
 
-		if (!isClientSide() && !isEmpty(variables, true)) {
-			const params = [template, data].map(param => JSON.stringify(param));
-			result += `<script>reform(${params.join(', ')});</script>`;
+		if (!isClientSide() && this.element !== false && !isEmpty(variables, true)) {
+			const params = [template, data || {}].map(param => JSON.stringify(param));
+			result += `<script>reform(${params.join(',')},true);</script>`;
 		}
 
 		this.element = result;
