@@ -12,6 +12,11 @@
 		"type": "git",
 		"url": "https://github.com/codetriplett/reformulator.git"
 	},
+	"files": [
+		"dist",
+		"lib",
+		"src"
+	],
 	"author": "triplett",
 	"license": "ISC",
 	"bugs": {
