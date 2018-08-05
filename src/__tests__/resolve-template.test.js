@@ -105,6 +105,42 @@ describe('resolve-template', () => {
 			});
 		});
 		
+		it('should allow template array in object property that returns objects', () => {
+			const actual = resolveTemplate({
+				items: [
+					'items', [
+						{ key: '@' }
+					]
+				]
+			}, {}, {
+				items: ['a', 'b']
+			});
+
+			expect(actual).toEqual({
+				items: [
+					{ key: 'a' },
+					{ key: 'b' }
+				]
+			});
+		});
+		
+		it('should allow template array in object property that returns strings', () => {
+			const actual = resolveTemplate({
+				items: [
+					'items', [
+						'key'
+					]
+				]
+			}, {}, {
+				items: [
+					{ key: 'a' },
+					{ key: 'b' }
+				]
+			});
+
+			expect(actual).toEqual({ items: ['a', 'b'] });
+		});
+		
 		it('should scope and wrap each sub template of an element properly', () => {
 			const actual = resolveTemplate([
 				'<p [x] @>', [
@@ -126,6 +162,23 @@ describe('resolve-template', () => {
 					scope: 'b'
 				}
 			]);
+		});
+
+		it('should not set new scope if container is a boolean', () => {
+			const actual = resolveTemplate([
+				'?object', [
+					'<p [key]>'
+				]
+			], {
+				object: { key: 'other' },
+				key: 'value'
+			});
+
+			expect(actual).toMatchObject({
+				type: 'p',
+				content: undefined,
+				scope: 'value'
+			});
 		});
 
 		it('should skip element if result of sub template is empty', () => {

@@ -33,6 +33,7 @@ export function resolveTemplate (template, state, ...stack) {
 		result = [];
 
 		const templateId = (state || {})[''] || '';
+		const templateLength = template.length;
 		let previousStage = 0;
 		let firstInStack = stack[0];
 		let containerArray = [firstInStack];
@@ -51,7 +52,7 @@ export function resolveTemplate (template, state, ...stack) {
 				currentStage = 0;
 			}
 
-			if (previousStage && currentStage <= previousStage) {
+			if (previousStage && currentStage <= previousStage	|| !previousStage && i === templateLength) {
 				if (!isEmpty(containerArray, true)) {
 					result = result.concat(containerArray);
 				}
@@ -69,7 +70,7 @@ export function resolveTemplate (template, state, ...stack) {
 				if (isEmpty(value, true) && (!isArray || item.length > 0)) {
 					container = [];
 				} else if (currentStage < 2) {
-					container = value;
+					container = value !== true ? value : container;
 				} else if (isArray && item.length > 0) {
 					container = containerIsElement ? container.append(value) : value;
 				}

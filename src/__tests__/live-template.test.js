@@ -9,7 +9,7 @@ describe('live-template', () => {
 			isClientSide.mockReturnValue(false);
 		});
 
-		it('should pass through non element results', () => {
+		it('should pass through non element results from a string', () => {
 			const liveTemplate = new LiveTemplate('1 + a', { a: 'a' });
 			const actual = liveTemplate.resolve();
 			expect(actual).toBe('1a');
@@ -38,6 +38,16 @@ describe('live-template', () => {
 			expect(actual).toBe('<p>a</p>');
 		});
 
+		it('should allow mixed array of strings and elements', () => {
+			const liveTemplate = new LiveTemplate([
+				'@',
+				'<p [@]>'
+			], 'a');
+
+			const actual = liveTemplate.resolve();
+			expect(actual).toBe('<div>a<p>a</p></div>');
+		});
+
 		it('should wrap repeated elements from template', () => {
 			const liveTemplate = new LiveTemplate([
 				'@', [
@@ -58,6 +68,20 @@ describe('live-template', () => {
 
 			const actual = liveTemplate.resolve();
 			expect(actual).toBe('<div><p></p><p></p></div>');
+		});
+		
+		it('should not set new state if container is a boolean', () => {
+			const liveTemplate = new LiveTemplate([
+				'?object', [
+					'<p [key]>'
+				]
+			], {
+				object: { key: 'other' },
+				key: 'value'
+			});
+
+			const actual = liveTemplate.resolve();
+			expect(actual).toBe('<p>value</p>');
 		});
 
 		it('should not include client side initializer if not needed', () => {

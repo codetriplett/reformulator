@@ -38,11 +38,12 @@ LiveTemplate.prototype.resolve = function () {
 	const template = this.template;
 	const data = this.data;
 	let result = resolveTemplate(template, this.state, data);
-	const resultIsArray = Array.isArray(result);
-	const resultIsElement = (resultIsArray && result[0] || result) instanceof ElementStructure;
+	const resultWasArray = Array.isArray(result);
+	const resultArray = resultWasArray ? result : [result];
+	const resultHasElement = resultArray.filter(resultItem => resultItem instanceof ElementStructure).length > 0;
 
-	if (resultIsElement) {
-		if (resultIsArray) {
+	if (resultHasElement) {
+		if (resultWasArray) {
 			const content = result;
 			result = new ElementStructure('div', { templateId: '' });
 			result.append(content);
@@ -63,5 +64,5 @@ LiveTemplate.prototype.resolve = function () {
 		this.elements = this.newElements;
 	}
 
-	return resultIsElement || !isEmpty(result, true) ? result : '';
+	return resultHasElement || !isEmpty(result, true) ? result : '';
 };

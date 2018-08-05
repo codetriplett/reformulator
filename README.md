@@ -1,8 +1,211 @@
 # Reformulator
-Transforms an object using a structured set of expressions. The transformation allows rescoping variables, iterating over arrays and rendering HTML, all without the need for writing your own logic in JavaScript. Results of transformations can be objects, arrays, numbers or strings. Since no JavaScript needs to be written, the transformation object can be stored in JSON. This package will add no additional dependencies to your project.
+Transforms an object into another object, array, number, string or interactive DOM element. Templates are written entirely in JSON and DOM elements can respond to user interactions.
 
-## Template
-An array can be passed as the first parameter to define container objects and their content. Each item that is not itself an array will be treated as a container object and the array that immediately follows, if it exists, will be its content. The container will provide a new scope for itself and its content. If a container does not have a content array, its scope will be its content. If a container does have a content array, but produces an empty result, it and its container will be ignored. If a content array does not have a container or the container resolves to true, no new scope is set. If the scope of the container is empty or false, it will not be returned and its content will be ignored. If the scope of the container is an array, it and its content will be processed together for each item in the array. If a container resolves to an object, its properties can be used in the container that follows it in the template. If the container is an HTML element, the content will be surrounded by opening and closing tags. If there is only one possible container in the template and it is an array or it is not an element and its content is an array, that array will be returned as the result of the template. Otherwise the result will be either a concatenation of the strings or a full merge of all the objects.
+## Implementation
+
+### Node
+```js
+import reform from 'reformulator';
+reform('<p ["Hello " + value]>', { value: 'World' });
+```
+
+### Browser
+```html
+<script src="reformulator.min.js"></script>
+<script>reform('"Hello " + value', { value: 'World' });</script>
+```
+
+## Examples
+
+### Data
+
+```js
+reform({
+	image: {
+		src: 'domain + path',
+		alt: 'altText'
+	},
+	description: 'description'
+}, {
+	domain: 'http://image.domain.com',
+	path: '/lorem-ipsum.jpg',
+	altText: 'lorem ipsum',
+	description: 'Lorem ipsum dolor sit amet.'
+});
+```
+
+The call above will produce the object below.
+
+```json
+{
+	"image": {
+		"src": "http://image.domain.com/lorem-ipsum.jpg",
+		"alt": "lorem ipsum"
+	},
+	"description": "Lorem ipsum dolor sit amet."
+}
+```
+
+### HTML
+
+```js
+reform([
+	'<div [] "example">', [
+		'<h2 [heading]>',
+		'<img [image] src: src, alt: alt>',
+		'<p [paragraphs]>'
+	]
+], {
+	heading: 'Lorem Ipsum',
+	image: {
+		src: '/lorem-ipsum.jpg',
+		alt: 'lorem ipsum'
+	},
+	paragraphs: [
+		'lorem ipsum dolor sit amet.',
+		'Consectetur adipiscing elit.'
+	]
+});
+```
+
+The call above will produce the HTML below.
+
+```html
+<div class="example">
+	<img alt="lorem ipsum" src="/lorem-ipsum.jpg">
+	<p>lorem ipsum dolor sit amet.</p>
+	<p>Consectetur adipiscing elit.</p>
+</div>
+```
+
+### HTML (with interaction)
+
+```js
+reform([
+	'<p [items - (expanded & 0 | items."length" - 3)]>',
+	'<a ["Show " + (expanded & "Less" | "More")] onclick: expanded>'
+], {
+	items: [
+		'Lorem',
+		'Ipsum',
+		'Dolor',
+		'Sit',
+		'Amet'
+	]
+});
+```
+
+The call above will produce the HTML below.
+
+```html
+<div>
+	<p>Lorem</p>
+	<p>Ipsum</p>
+	<p>Dolor</p>
+	<a href="javascript:void(0);">Show More</a>
+</div>
+<script>reform(["<p [items - (expanded & 0 | items.'length' - 3)]>","<a ['Show ' + (expanded & 'Less' | 'More')] onclick: expanded>"],{"items":["Lorem","Ipsum","Dolor","Sit","Amet"]});</script>
+```
+
+The HTML will change to the following after clicking the "Show More" button.
+
+```html
+<div>
+	<p>Lorem</p>
+	<p>Ipsum</p>
+	<p>Dolor</p>
+	<p>Sit</p>
+	<p>Amet</p>
+	<a href="javascript:void(0);">Show Less</a>
+</div>
+```
+
+The HTML will change back to its initial state after clicking the "Show Less" button.
+
+### Advanced
+
+```js
+reform([
+	'<ul>', [
+		'<li [links]>', [
+			'<a [url & image & @] href: url> | @', [
+				{
+					src: 'image',
+					alt: 'altText'
+				},
+				'<img [src] "image", src: src, alt: alt>'
+			],
+			'<p [(description | url) & @]>', [
+				'description',
+				'description & url & " "',
+				'<a [url & "click here"] href: url>'
+			]
+		]
+	]
+], {
+	links: [
+		{
+			url: '/lorem-ipsum',
+			image: '/lorem-ipsum.jpg',
+			altText: 'lorem ipsum',
+			description: 'Lorem ipsum.'
+		},
+		{
+			url: '/dolor-sit',
+			image: '/dolor-sit.jpg',
+			altText: 'dolor sit',
+			description: 'Dolor sit.'
+		},
+		{
+			image: '/amet-consectetur.jpg',
+			altText: 'amet consectetur',
+			description: 'Amet consectetur.'
+		},
+		{
+			image: '/adipiscing-elit.jpg',
+			altText: 'adipiscing elit'
+		},
+		{
+			url: '/lorem'
+		}
+	]
+});
+```
+
+
+The call above will produce the HTML below.
+
+```html
+<ul>
+	<li>
+		<a href="/lorem-ipsum">
+			<img class="image" alt="lorem ipsum" src="/lorem-ipsum.jpg">
+		</a>
+		<p>Lorem ipsum. <a href="/lorem-ipsum">click here</a></p>
+	</li>
+	<li>
+		<a href="/dolor-sit">
+			<img class="image" alt="dolor sit" src="/dolor-sit.jpg">
+		</a>
+		<p>Dolor sit. <a href="/dolor-sit">click here</a></p>
+	</li>
+	<li>
+		<img class="image" alt="amet consectetur" src="/amet-consectetur.jpg">
+		<p>Amet consectetur.</p>
+	</li>
+	<li>
+		<img class="image" alt="adipiscing elit" src="/adipiscing-elit.jpg">
+	</li>
+	<li>
+		<p>
+			<a href="/lorem">click here</a>
+		</p>
+	</li>
+</ul>
+```
+
+# Expression
+Each expression is a sequence of operations that resolves to a single value. The operators are defined below along with their precedence in the order of operations. Operations with a higher precedence will be performed first, otherwise operations are performed left to right. Parentheses can be used to control the order of operations.
 
 ## Values
 Arrays, objects, strings, numbers and boolean values can be referenced through variables in the expression string and read from the data you provide or be defined directly in the expression string. Expressions in objects, arrays and elements can only contain variables, strints, number or boolean values.
@@ -23,7 +226,7 @@ When placed immediately before a variable, the value will be a boolean 'true' if
 Strings can be defined by surrounding text in either single or double quotes. If the type of quote that was used to surround the string needs to also exists in the content of the string, it should be preceded by two backslashes.
 
 ### Numbers
-Numbers can be defined including decimals.
+Integers and decimals can be defined.
 
 ### Boolean
 Boolean values can be defined.
@@ -36,9 +239,6 @@ Arrays can be defined by surrounding a sequence of expressions in square bracket
 
 ### Elements
 Elements are surrounded by angle brackets and must start with a the tag name. This can be followed optionally by an expression in square brackets to set the scope and then keyed or non-keyed expressions to set the attributes and classes respectively. The scope will be used as the content of the element if its type allows content to be set and it is not followed by a content array. The output of an element will be an HTML string.
-
-## Expression
-Each expression is a sequence of operations that resolves to a single value. The operators are defined below. The precedence next to each determines the order of operations. The operator with the higher precedence will use its adjacent value in its operation first. Operators with the same precedence will be processed left to right. Operations inside of parentheses will be completed before using that value in operations outside of the parentheses.
 
 ### | (Precedence: 0)
 This will keep the value to its left if it is defined and not false, otherwise this will keep the value to its right.
