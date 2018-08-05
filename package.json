@@ -14,8 +14,7 @@
 	},
 	"files": [
 		"dist",
-		"lib",
-		"src"
+		"lib"
 	],
 	"author": "triplett",
 	"license": "ISC",
