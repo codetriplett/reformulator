@@ -18,6 +18,11 @@
 	],
 	"author": "triplett",
 	"license": "ISC",
+	"keywords": [
+		"template",
+		"html",
+		"json"
+	],
 	"bugs": {
 		"url": "https://github.com/codetriplett/reformulator/issues"
 	},
