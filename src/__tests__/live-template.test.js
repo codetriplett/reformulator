@@ -220,5 +220,22 @@ describe('live-template', () => {
 			expect(actual.children[0]).toBe(input);
 			expect(actual.children[1].innerHTML).toBe('value: asdf');
 		});
+
+		it('should register scroll listener', () => {
+			window.reform = { scrollElements: [] };
+
+			const element = document.createElement('div');
+			const liveTemplate = new LiveTemplate();
+			liveTemplate.register('action', element, 'value');
+
+			expect(window.reform.scrollElements).toEqual([
+				{
+					type: 'action',
+					element,
+					variable: 'value',
+					liveTemplate
+				}
+			]);
+		});
 	});
 });

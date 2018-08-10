@@ -29,6 +29,15 @@ export function LiveTemplate (template, ...others) {
 	this.element = element;
 }
 
+LiveTemplate.prototype.register = function (type, element, variable) {
+	window.reform && window.reform.scrollElements.push({
+		type,
+		element,
+		variable,
+		liveTemplate: this
+	});
+};
+
 LiveTemplate.prototype.update = function (variable, value) {
 	const state = this.state;
 	state[variable] = value !== undefined ? value : !state[variable];

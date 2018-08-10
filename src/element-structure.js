@@ -114,6 +114,15 @@ ElementStructure.prototype.render = function (liveTemplate) {
 					case 'onkeypress':
 						element.addEventListener('keypress', event => liveTemplate.update(variable, event.target.value));
 						break;
+					case 'onappear':
+						liveTemplate.register('appear', element, variable);
+						break;
+					case 'onabove':
+						liveTemplate.register('above', element, variable);
+						break;
+					case 'onbelow':
+						liveTemplate.register('below', element, variable);
+						break;
 				}
 			}
 		}

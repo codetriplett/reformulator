@@ -3,7 +3,10 @@ import { ElementStructure } from '../element-structure';
 
 jest.mock('../environment', () => ({ isClientSide: jest.fn() }));
 
-const liveTemplate = { update: jest.fn() };
+const liveTemplate = {
+	register: jest.fn(),
+	update: jest.fn()
+};
 
 function mockEvent (element, type, options = {}) {
 	let event;
@@ -295,6 +298,7 @@ describe('element-structure', () => {
 
 		beforeEach(() => {
 			isClientSide.mockReturnValue(true);
+			liveTemplate.register.mockClear();
 			liveTemplate.update.mockClear();
 			
 			elementStructure = new ElementStructure('input', {
@@ -303,7 +307,10 @@ describe('element-structure', () => {
 					onclick: 'clickValue',
 					onkeydown: 'keydownValue',
 					onkeyup: 'keyupValue',
-					onkeypress: 'keypressValue'
+					onkeypress: 'keypressValue',
+					onappear: 'appearValue',
+					onabove: 'aboveValue',
+					onbelow: 'belowValue'
 				}
 			});
 
@@ -332,6 +339,21 @@ describe('element-structure', () => {
 			const actual = elementStructure.render(liveTemplate);
 			mockEvent(actual, 'keypress');
 			expect(liveTemplate.update).toHaveBeenCalledWith('keypressValue', 'asdf');
+		});
+
+		it('should register onappear event', () => {
+			const actual = elementStructure.render(liveTemplate);
+			expect(liveTemplate.register).toHaveBeenCalledWith('appear', actual, 'appearValue');
+		});
+
+		it('should register onabove event', () => {
+			const actual = elementStructure.render(liveTemplate);
+			expect(liveTemplate.register).toHaveBeenCalledWith('above', actual, 'aboveValue');
+		});
+
+		it('should register onbelow event', () => {
+			const actual = elementStructure.render(liveTemplate);
+			expect(liveTemplate.register).toHaveBeenCalledWith('below', actual, 'belowValue');
 		});
 
 		it('should not fail when liveTemplate is not provided', () => {
