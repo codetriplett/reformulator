@@ -174,7 +174,6 @@ reform([
 });
 ```
 
-
 The call above will produce the HTML below.
 
 ```html
@@ -206,40 +205,58 @@ The call above will produce the HTML below.
 </ul>
 ```
 
-# Expression
+## Events
+Attributes that begin with 'on' will act as event listeners that can update the state and rendered output of the template. The DOM will only be updated with the changes that are detected between changes in the state. The value of the attribute is the name of the variable that will be modified in the state.
+
+### onclick
+Toggles the variable between false and true every time the element is clicked.
+
+### onkeydown, onkeyup, onkeypress
+Sets the variable to the value of the input whenever the key events are triggered.
+
+### onappear
+Sets the variable to true the first time the element partially comes into view.
+
+### onabove
+Sets the variable to true if the element is at or above the top edge of the screen and sets it to false otherwise.
+
+### onbelow
+Sets the variable to true if the element is at or below the bottom edge of the screen and sets it to false otherwise.
+
+## Expressions
 Each expression is a sequence of operations that resolves to a single value. The operators are defined below along with their precedence in the order of operations. Operations with a higher precedence will be performed first, otherwise operations are performed left to right. Parentheses can be used to control the order of operations.
 
-## Values
+### Values
 Arrays, objects, strings, numbers and boolean values can be referenced through variables in the expression string and read from the data you provide or be defined directly in the expression string. Expressions in objects, arrays and elements can only contain variables, strints, number or boolean values.
 
-### Variables
+#### Variables
 Any text not surrounded by quotes will be treated as a variable name to read from the input data. Each template array can add another scope to the stack of data. If it fails to find a value in the immediate scope in the stack, it will continue until it does or there are no more scope objects to read from.
 
-#### @
+##### @
 This can be used to reference the immediate scope. It is useful when the scope is a string or a number or if you don't want to use scopes higher up in the stack.
 
-#### ?
+##### ?
 When placed immediately before a variable, the value will be a boolean 'false' if the variable is empty, otherwise it will be a boolean 'true'. A value will be considered empty if it is undefined, null, NaN, an empty string, an object with no properties or an array with no items.
 
-#### !
+##### !
 When placed immediately before a variable, the value will be a boolean 'true' if the variable is not empty, otherwise it will be a boolean 'false'. A value will be considered empty if it is undefined, null, NaN, an empty string, an object with no properties or an array with no items.
 
-### Strings
+#### Strings
 Strings can be defined by surrounding text in either single or double quotes. If the type of quote that was used to surround the string needs to also exists in the content of the string, it should be preceded by two backslashes.
 
-### Numbers
+#### Numbers
 Integers and decimals can be defined.
 
-### Boolean
+#### Boolean
 Boolean values can be defined.
 
-### Objects
+#### Objects
 Objects can be defined by surrounding a sequence of keyed expressions in curly braces. The key for each expression should not be surrounded by quotes.
 
-### Arrays
+#### Arrays
 Arrays can be defined by surrounding a sequence of expressions in square brackets.
 
-### Elements
+#### Elements
 Elements are surrounded by angle brackets and must start with a the tag name. This can be followed optionally by an expression in square brackets to set the scope and then keyed or non-keyed expressions to set the attributes and classes respectively. The scope will be used as the content of the element if its type allows content to be set and it is not followed by a content array. The output of an element will be an HTML string.
 
 ### | (Precedence: 0)
