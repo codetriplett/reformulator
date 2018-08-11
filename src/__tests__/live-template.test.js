@@ -59,6 +59,16 @@ describe('live-template', () => {
 			expect(actual).toBe('<div><p>a</p><p>b</p></div>');
 		});
 
+		it('should not wrap doctype followed by html', () => {
+			const liveTemplate = new LiveTemplate([
+				'<!doctype>',
+				'<html>'
+			]);
+			
+			const actual = liveTemplate.resolve();
+			expect(actual).toBe('<!doctype><html></html>');
+		});
+
 		it('should not set parent state to empty children', () => {
 			const liveTemplate = new LiveTemplate([
 				'@', [

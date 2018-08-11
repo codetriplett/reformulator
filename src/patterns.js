@@ -1,7 +1,7 @@
 export const variableDefinition = '([a-zA-Z_$][0-9a-zA-Z_$]*)';
 export const keyDefinition = `(${variableDefinition}(-${variableDefinition})*)`;
 export const stringDefinition = '("(\\\\"|[^"])*"|\'(\\\\\'|[^\'])*\')';
-export const typeDefinition = '(!doctype|[a-z]+)';
+export const typeDefinition = '(!doctype|[a-z][a-z0-9]*)';
 export const objectDefinition = `(\\{(${stringDefinition}|[^}])*\\})`;
 export const arrayDefinition = `(\\[(${stringDefinition}|[^\\]])*\\])`;
 export const elementDefinition = `< *${typeDefinition} *(${arrayDefinition}(${stringDefinition}|[^>])*)?>`;

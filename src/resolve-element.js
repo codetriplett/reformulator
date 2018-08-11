@@ -1,7 +1,6 @@
 import {
 	typeDefinition,
 	arrayDefinition,
-	literalTypeRegex,
 	spaceRegex
 } from './patterns';
 

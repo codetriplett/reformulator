@@ -51,12 +51,18 @@ LiveTemplate.prototype.resolve = function () {
 	const resultWasArray = Array.isArray(result);
 	const resultArray = resultWasArray ? result : [result];
 	const resultHasElement = resultArray.filter(resultItem => resultItem instanceof ElementStructure).length > 0;
+	let doctypeElement;
 
 	if (resultHasElement) {
 		if (resultWasArray) {
-			const content = result;
-			result = new ElementStructure('div', { templateId: '' });
-			result.append(content);
+			if (result[0].type === '!doctype' && result.length > 1) {
+				doctypeElement = result[0];
+				result = result[1];
+			} else {
+				const content = result;
+				result = new ElementStructure('div', { templateId: '' });
+				result.append(content);
+			}
 		}
 
 		const variables = result.variables;
@@ -65,9 +71,15 @@ LiveTemplate.prototype.resolve = function () {
 		this.newElements = {};
 		result = result.render(this);
 
-		if (!isClientSide() && this.element !== false && !isEmpty(variables, true)) {
-			const params = [template, data || {}].map(param => JSON.stringify(param));
-			result += `<script>reform(${params.join(',')},true);</script>`;
+		if (!isClientSide()) {
+			if (doctypeElement) {
+				result = `${doctypeElement.render(this)}${result}`;
+			}
+
+			if (this.element !== false && !isEmpty(variables, true)) {
+				const params = [template, data || {}].map(param => JSON.stringify(param));
+				result += `<script>reform(${params.join(',')},true);</script>`;
+			}
 		}
 
 		this.element = result;

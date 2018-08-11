@@ -20,6 +20,7 @@ const operationRegex = new RegExp(`^${operationDefinition} *`);
 const negativeSignRegex = new RegExp(`[${operatorDefinition}] *-(?=${variableDefinition}|\\()`);
 const negationRegex = new RegExp(`[${operatorDefinition}] *!(?=${operandDefinition})`);
 const existenceRegex = new RegExp(`[${operatorDefinition}] *\\?(?=${operandDefinition})`);
+const doctypeRegex = /< *\( *! *doctype/;
 
 export function resolveExpression (expression, state, ...stack) {
 	const valueStack = [];
@@ -28,6 +29,7 @@ export function resolveExpression (expression, state, ...stack) {
 
 	let remainingExpression = `(${expression.trim()}`
 		.replace(negationRegex, match => `${match[0]}(!`)
+		.replace(doctypeRegex, '<!doctype')
 		.replace(existenceRegex, match => `${match[0]}(?`)
 		.replace(negativeSignRegex, match => `${match[0]}(-1 * `);
 
