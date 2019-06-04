@@ -38,6 +38,8 @@
 		"grunt-contrib-concat": "^1.0.1",
 		"grunt-contrib-uglify": "^3.4.0",
 		"grunt-replace": "^1.0.1",
-		"jest": "^22.2.2"
+		"jest": "^22.2.2",
+		"lodash": "^4.17.11",
+		"merge": "^1.2.1"
 	}
 }

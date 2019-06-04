@@ -47,17 +47,13 @@ export function resolveExpression (expression, state, ...stack) {
 		const nextOperator = remainingExpression[0];
 		const value = resolveValue(nextOperation.slice(1), state, ...stack);
 
-		if (delayOperation(currentOperator, nextOperator)) {
-			operatorStack.splice(0, 0, currentOperator);
-			valueStack.splice(0, 0, value);
-		} else {
-			valueStack[0] = resolveOperation(valueStack[0], currentOperator, value);
+		operatorStack.unshift(currentOperator);
+		valueStack.unshift(value);
 
-			while (operatorStack.length > 0 && !delayOperation(operatorStack[0], nextOperator)) {
-				const previousValue = valueStack.splice(0, 1)[0];
-				const previousOperator = operatorStack.splice(0, 1)[0];
-				valueStack[0] = resolveOperation(valueStack[0], previousOperator, previousValue);
-			}
+		while (operatorStack.length > 0 && !delayOperation(operatorStack[0], nextOperator)) {
+			const previousValue = valueStack.shift();
+			const previousOperator = operatorStack.shift();
+			valueStack[0] = resolveOperation(valueStack[0], previousOperator, previousValue);
 		}
 	}
 
